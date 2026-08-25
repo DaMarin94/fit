@@ -1,0 +1,127 @@
+// Prisma schema — Fit backend
+// Fase 0: Exercise, Block (+ BlockExercise), Routine, Day (+ bloques copiados), WorkoutLog.
+// Equipment / EquipmentGroup entran en la Fase 2 (docs/roadmap.md).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Lista cerrada y ampliable de tipos de bloque (RF-003, data-model.md §2.4).
+enum BlockType {
+  fuerza
+  metcon
+  intervalos
+  cardio_libre
+}
+
+// Modo de avance entre bloques (RN-009).
+enum AdvanceMode {
+  automatico
+  manual
+}
+
+// --- Pool reutilizable -------------------------------------------------
+
+model Exercise {
+  id        String    @id @default(cuid())
+  name      String
+  deletedAt DateTime?
+
+  blockExercises    BlockExercise[]
+  dayBlockExercises DayBlockExercise[]
+}
+
+// Bloque de entrenamiento del pool (data-model.md §2.4).
+model Block {
+  id          String      @id @default(cuid())
+  name        String
+  type        BlockType
+  // Forma de timerConfig depende de `type` (data-model.md §2.5). Se valida
+  // en la capa de aplicación (DTOs), no a nivel de esquema.
+  timerConfig Json
+  advanceMode AdvanceMode
+  deletedAt   DateTime?
+
+  exercises BlockExercise[]
+}
+
+// Asocia un Exercise del pool a un Block del pool, con su posición y su
+// configuración de esfuerzo (data-model.md §2.6).
+model BlockExercise {
+  id         String @id @default(cuid())
+  blockId    String
+  exerciseId String
+  order      Int
+  reps       Int?
+  duration   Int?
+
+  block    Block    @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+}
+
+// --- Rutinas -------------------------------------------------------------
+
+model Routine {
+  id        String    @id @default(cuid())
+  name      String
+  deletedAt DateTime?
+
+  days Day[]
+}
+
+// Día de una rutina (data-model.md §2.8). Es la unidad que se ejecuta en
+// Modo entrenar.
+model Day {
+  id        String @id @default(cuid())
+  routineId String
+  order     Int
+
+  routine Routine    @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  blocks  DayBlock[]
+}
+
+// Bloque COPIADO dentro de un día (RN-002, RN-003): snapshot independiente
+// del Block del pool, nunca una referencia. Congela name/type/timerConfig/
+// advanceMode al momento de agregarse.
+model DayBlock {
+  id          String      @id @default(cuid())
+  dayId       String
+  order       Int
+  name        String
+  type        BlockType
+  timerConfig Json
+  advanceMode AdvanceMode
+
+  day       Day                @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  exercises DayBlockExercise[]
+}
+
+// Ejercicio dentro de un bloque copiado. Sigue referenciando al Exercise del
+// pool por exerciseId: ese vínculo sostiene el bloqueo de borrado (RN-007).
+model DayBlockExercise {
+  id         String @id @default(cuid())
+  dayBlockId String
+  exerciseId String
+  order      Int
+  reps       Int?
+  duration   Int?
+
+  dayBlock DayBlock @relation(fields: [dayBlockId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+}
+
+// --- Historial -------------------------------------------------------------
+
+// Snapshot inmutable de una ejecución completa (RN-001). Sin relaciones vivas
+// a Routine/Day/Block/Exercise: todo lo necesario vive congelado en `snapshot`.
+// Sin borrado lógico: un WorkoutLog no se borra ni se edita.
+model WorkoutLog {
+  id          String   @id @default(cuid())
+  performedAt DateTime
+  snapshot    Json
+}

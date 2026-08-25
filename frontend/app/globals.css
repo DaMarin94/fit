@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+/* Tailwind v4: umbral único de disposición (`docs/design.md` §8.1). Habilita
+   el prefijo `wide:`. No se agregan breakpoints intermedios de disposición. */
+@theme {
+  --breakpoint-wide: 1024px;
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono",
+    "Roboto Mono", monospace;
+}
+
+/* Modo claro (default) — `docs/design.md` §3.4 */
+:root,
+[data-theme="light"] {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --surface-2: #f1f3f7;
+  --border: #e2e5ec;
+  --border-strong: #c9ceda;
+  --text: #12151c;
+  --text-muted: #5a6273;
+  --text-disabled: #9aa1b0;
+
+  --accent: #5b45e0;
+  --accent-hover: #4c38c4;
+  --accent-fg: #ffffff;
+  --accent-tint: #edeafd;
+
+  --success: #147a46;
+  --success-tint: #e6f5ee;
+  --danger: #be1f45;
+  --danger-tint: #fbe8ed;
+  --warning: #8a5a00;
+  --warning-tint: #fdf3e0;
+
+  --phase-work-bg: #c4441f;
+  --phase-work-fg: #ffffff;
+  --phase-rest-bg: #0b6e93;
+  --phase-rest-fg: #ffffff;
+  --phase-idle-bg: #f1f3f7;
+  --phase-idle-fg: #12151c;
+
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-full: 9999px;
+}
+
+/* Modo oscuro — `docs/design.md` §3.5 */
+[data-theme="dark"] {
+  --bg: #0b0e14;
+  --surface: #141922;
+  --surface-2: #1d2430;
+  --border: #2a3340;
+  --border-strong: #3c4757;
+  --text: #edf0f5;
+  --text-muted: #a0aabb;
+  --text-disabled: #5d6878;
+
+  --accent: #8b79ff;
+  --accent-hover: #a091ff;
+  --accent-fg: #10121a;
+  --accent-tint: #1e1b33;
+
+  --success: #45d18a;
+  --success-tint: #10281d;
+  --danger: #ff6b8a;
+  --danger-tint: #2c1119;
+  --warning: #f5b333;
+  --warning-tint: #2a2008;
+
+  --phase-work-bg: #3a1408;
+  --phase-work-fg: #ff8452;
+  --phase-rest-bg: #08222f;
+  --phase-rest-fg: #58c8ee;
+  --phase-idle-bg: #1d2430;
+  --phase-idle-fg: #edf0f5;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
