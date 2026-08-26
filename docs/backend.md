@@ -23,11 +23,12 @@ Cuatro piezas transversales, todas registradas globalmente:
 
 Cómo las entidades de `docs/data-model.md` se materializan en el schema: tablas, índices y restricciones de unicidad.
 
-Entidades materializadas: `Exercise`, `Block` + `BlockExercise`, `Routine`, `Day` + `DayBlock` + `DayBlockExercise`, y `WorkoutLog`.
+Entidades materializadas: `Exercise`, `Block` + `BlockExercise`, `Routine`, `Day` + `DayBlock` + `DayBlockExercise`, `Equipment` + `EquipmentGroup` + `EquipmentGroupItem`, y `WorkoutLog`.
 
 - **`DayBlock` y `DayBlockExercise` son nombres internos del schema**, no aparecen en `data-model.md`: son las dos tablas que materializan los *bloques copiados* de un día (`data-model.md` §2.8), es decir el snapshot independiente del pool que exigen RN-002 y RN-003.
 - **IDs:** todas las entidades usan `String @id @default(cuid())`. `data-model.md` habla de "ID técnico" sin fijar formato; el formato concreto se decide acá.
-- **`Equipment` y los grupos de equipo (`data-model.md` §2.1 y §2.3) no existen todavía** en el schema, ni el campo `equipmentGroups` de `Exercise`. Entran con su propia migración (`roadmap.md` §Fase 2).
+- **`EquipmentGroupItem` es también un nombre interno del schema** (mismo patrón que `DayBlockExercise`): la tabla puente entre un `EquipmentGroup` y los `Equipment` que lo componen.
+- **`EquipmentGroup` no tiene `name` ni columna `order` propia**: el orden de los grupos de un ejercicio no es significativo (`data-model.md` §2.3). El orden de la respuesta igual es determinístico, por `orderBy: { id: 'asc' }` sobre `equipmentGroups` y sobre sus `items`.
 
 ## Endpoints
 
@@ -37,20 +38,44 @@ Rutas, bodies, respuestas y códigos de error. El envoltorio (`{ data }` en éxi
 
 ### Exercises
 
-`Exercise` en la respuesta es `{ id, name, deletedAt }`.
+`Exercise` en la respuesta es `{ id, name, equipmentGroups, deletedAt }`, donde **`equipmentGroups` es `string[][]`**: una lista de grupos, y cada grupo una lista de `equipmentId`. Dentro de un grupo los elementos son alternativas ("O"); entre grupos el requisito es conjunto ("Y"). `[]` o ausente significa sin equipo.
 
 | Verbo y ruta | Body | Respuesta | Errores |
 |---|---|---|---|
 | `GET /exercises` | — | `{ data: Exercise[] }` | — |
-| `POST /exercises` | `{ name }` | `{ data: Exercise }` (201) | `NAME_TAKEN` |
-| `PATCH /exercises/:id` | `{ name }` | `{ data: Exercise }` | `EXERCISE_NOT_FOUND`, `NAME_TAKEN` |
+| `GET /exercises?equipmentId=<id>` | — | `{ data: Exercise[] }` — solo los que listan ese elemento en alguno de sus grupos | — |
+| `GET /exercises?equipmentId=none` | — | `{ data: Exercise[] }` — solo los que no declaran ningún grupo (RF-018) | — |
+| `POST /exercises` | `{ name, equipmentGroups? }` | `{ data: Exercise }` (201) | `NAME_TAKEN`, `EQUIPMENT_NOT_FOUND` |
+| `PATCH /exercises/:id` | `{ name, equipmentGroups? }` | `{ data: Exercise }` | `EXERCISE_NOT_FOUND`, `NAME_TAKEN`, `EQUIPMENT_NOT_FOUND` |
 | `DELETE /exercises/:id` | — | `{ data: Exercise }` con `deletedAt` seteado | `EXERCISE_NOT_FOUND`, `EXERCISE_IN_USE` |
+
+`"none"` es un **string reservado** del filtro, nunca un cuid válido; no colisiona con ningún `equipmentId` real.
+
+`PATCH /exercises/:id` **reemplaza el conjunto completo de `equipmentGroups`**, no hace merge: mismo criterio de "editar es reemplazar" que rige `PATCH /blocks/:id`.
 
 | Código | Status | Cuándo |
 |---|---|---|
 | `NAME_TAKEN` | 409 | Ya hay un ejercicio no borrado con ese nombre (RN-005) |
 | `EXERCISE_NOT_FOUND` | 404 | No existe o está borrado |
 | `EXERCISE_IN_USE` | 409 | Algún `BlockExercise` o `DayBlockExercise` lo referencia (RN-007) |
+| `EQUIPMENT_NOT_FOUND` | 404 | Algún `equipmentId` de `equipmentGroups` no existe o está borrado |
+
+### Equipment
+
+`Equipment` en la respuesta es `{ id, name, deletedAt }`.
+
+| Verbo y ruta | Body | Respuesta | Errores |
+|---|---|---|---|
+| `GET /equipment` | — | `{ data: Equipment[] }` | — |
+| `POST /equipment` | `{ name }` | `{ data: Equipment }` (201) | `NAME_TAKEN` |
+| `PATCH /equipment/:id` | `{ name }` | `{ data: Equipment }` | `EQUIPMENT_NOT_FOUND`, `NAME_TAKEN` |
+| `DELETE /equipment/:id` | — | `{ data: Equipment }` con `deletedAt` seteado | `EQUIPMENT_NOT_FOUND`, `EQUIPMENT_IN_USE` |
+
+| Código | Status | Cuándo |
+|---|---|---|
+| `NAME_TAKEN` | 409 | Ya hay un elemento no borrado con ese nombre (RN-005) |
+| `EQUIPMENT_NOT_FOUND` | 404 | No existe o está borrado |
+| `EQUIPMENT_IN_USE` | 409 | Algún `EquipmentGroupItem` lo referencia (RN-013) |
 
 ### Blocks
 
@@ -145,7 +170,7 @@ Body de creación y edición:
 
 `WorkoutLog` en la respuesta es `{ id, performedAt, snapshot }`. No hay edición ni borrado (RN-001).
 
-El `snapshot` lo arma el backend leyendo el estado actual del `Day` —que ya es la copia vigente (RN-002)—, y **sí incluye el nombre resuelto de cada ejercicio**, congelado:
+El `snapshot` lo arma el backend leyendo el estado actual del `Day` —que ya es la copia vigente (RN-002)—, y **sí incluye el nombre resuelto de cada ejercicio y su equipamiento**, congelados:
 
 ```json
 {
@@ -157,11 +182,21 @@ El `snapshot` lo arma el backend leyendo el estado actual del `Day` —que ya es
       "type": "...",
       "timerConfig": { },
       "advanceMode": "...",
-      "exercises": [{ "name": "...", "order": 0, "reps": 12, "duration": 60 }]
+      "exercises": [
+        {
+          "name": "...",
+          "order": 0,
+          "reps": 12,
+          "duration": 60,
+          "equipmentGroups": [["kettlebell", "mancuernas"]]
+        }
+      ]
     }
   ]
 }
 ```
+
+En el snapshot `equipmentGroups` es también `string[][]`, pero con los **nombres** de los elementos, no sus IDs: se congelan por valor (RN-015).
 
 | Código | Status | Cuándo |
 |---|---|---|
@@ -183,7 +218,13 @@ No están en los docs cerrados; son decisiones que tomó el backend:
 
 `src/exercises`. CRUD del pool de ejercicios (RF-001). Aplica RN-005 al crear y renombrar, RN-008 en el borrado y RN-007 en el bloqueo del borrado: consulta `BlockExercise` y `DayBlockExercise` antes de borrar y corta con `EXERCISE_IN_USE` si hay alguna referencia.
 
-`equipmentGroups` (`data-model.md` §2.2) todavía no forma parte del recurso: entra con Equipment (`roadmap.md` §Fase 2).
+También es el dueño de los grupos de equipo del ejercicio (RF-017, `data-model.md` §2.3): valida cada `equipmentId` recibido contra el pool de `Equipment` —mismo criterio con el que rutinas valida `exerciseId`— y corta con `EQUIPMENT_NOT_FOUND`. Al editar aplica **reemplazo completo** del conjunto de grupos.
+
+RN-014 la sostiene el DTO, con un validador custom de `class-validator` que rechaza los grupos vacíos: sale como `VALIDATION_ERROR`, no como un código de dominio propio.
+
+### Equipamiento
+
+`src/equipment`. CRUD del pool de elementos (RF-016). Aplica RN-005 al crear y renombrar, RN-008 en el borrado y RN-013 en el bloqueo del borrado: corta con `EQUIPMENT_IN_USE` si algún `EquipmentGroupItem` lo referencia.
 
 ### Bloques
 
@@ -195,9 +236,7 @@ No están en los docs cerrados; son decisiones que tomó el backend:
 
 ### Historial
 
-`src/workout-logs`. Crea el registro de una ejecución terminada (RF-013) y lista el historial (RF-014). Construye el snapshot inmutable de RN-001 a partir del `Day` y resuelve ahí los nombres de los ejercicios, de modo que el registro no conserve ninguna referencia editable (`data-model.md` §2.9). No expone edición ni borrado. La agrupación por día y semana (RN-012) se deriva de `performedAt` en el frontend; el backend solo ordena descendente.
-
-El snapshot todavía no congela equipamiento (RN-015): entra con Equipment (`roadmap.md` §Fase 2).
+`src/workout-logs`. Crea el registro de una ejecución terminada (RF-013) y lista el historial (RF-014). Construye el snapshot inmutable de RN-001 a partir del `Day` y resuelve ahí los nombres de los ejercicios y de su equipamiento (RN-015), de modo que el registro no conserve ninguna referencia editable (`data-model.md` §2.9). No expone edición ni borrado. La agrupación por día y semana (RN-012) se deriva de `performedAt` en el frontend; el backend solo ordena descendente.
 
 ## Semilla
 
@@ -205,8 +244,7 @@ Qué debe existir está en `docs/requirements.md` §6; acá va cómo se carga.
 
 - **Script:** `backend/prisma/seed.ts`. Se corre con `prisma db seed`, declarado en `prisma.config.ts` como `migrations.seed: "ts-node prisma/seed.ts"`.
 - **Idempotente:** si ya existe una rutina `Plan semanal` no borrada, no hace nada. Correrlo dos veces no duplica.
-- **Qué carga:** los 15 ejercicios, los 8 bloques del pool y la rutina `Plan semanal` de 5 días de `docs/requirements.md` §6.
-- **Sin equipamiento:** los ejercicios se crean sin `equipmentGroups`, que todavía no existe en el schema (`roadmap.md` §Fase 2).
+- **Qué carga:** los 4 elementos, los 15 ejercicios con sus grupos de equipo —incluido el grupo alternativo de *remos* {kettlebell, mancuernas}—, los 8 bloques del pool y la rutina `Plan semanal` de 5 días de `docs/requirements.md` §6.1.
 
 ## Testing
 

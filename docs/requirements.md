@@ -115,7 +115,7 @@ No son límites permanentes; son alcance de una versión futura:
 | **RN-011** | **El tema sigue al sistema, hasta que el usuario decida.** La primera vez, el tema claro/oscuro sigue la preferencia del sistema operativo. Si el usuario cambia el toggle manualmente, esa preferencia se guarda y prevalece sobre el sistema de ahí en adelante |
 | **RN-012** | **El historial se agrupa por día calendario y por semana.** El día calendario se determina con la hora local del dispositivo. La semana va de **lunes a domingo**, igual que el plan semanal |
 | **RN-013** | **No se borra un elemento en uso.** Si un elemento aparece en algún grupo de equipo de algún ejercicio, el borrado se bloquea con un mensaje que lo explica. Hay que sacarlo del ejercicio primero. Mismo criterio que RN-007 |
-| **RN-014** | **Un grupo de equipo tiene al menos un elemento.** No se puede guardar un ejercicio con un grupo vacío: o el grupo tiene elementos, o no existe. Un ejercicio sin equipo simplemente no declara grupos |
+| **RN-014** | **Un grupo de equipo tiene al menos un elemento.** No se puede guardar un ejercicio con un grupo vacío: o el grupo tiene elementos, o no existe. Un ejercicio sin equipo simplemente no declara grupos. Un mismo elemento **puede** repetirse en dos grupos distintos del mismo ejercicio: no hay restricción de unicidad entre grupos |
 | **RN-015** | **El historial congela el equipamiento.** El snapshot de un entrenamiento guarda, por cada ejercicio, los grupos de equipo que tenía en ese momento, con los nombres de los elementos por valor. Renombrar o borrar un elemento después no altera el historial (caso particular de RN-001) |
 
 ---

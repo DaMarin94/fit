@@ -11,6 +11,10 @@ export const exerciseNameSchema = z.object({
   name: z.string().trim().min(1, "El nombre es obligatorio."),
 });
 
+export const equipmentNameSchema = z.object({
+  name: z.string().trim().min(1, "El nombre es obligatorio."),
+});
+
 const nameSchema = z.string().trim().min(1, "El nombre es obligatorio.");
 
 const positiveInt = z

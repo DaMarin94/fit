@@ -8,43 +8,140 @@ import {
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
 
+const EQUIPMENT_GROUPS_INCLUDE = {
+  equipmentGroups: {
+    orderBy: { id: 'asc' as const },
+    include: { items: { orderBy: { id: 'asc' as const } } },
+  },
+};
+
+type ExerciseWithGroups = {
+  id: string;
+  name: string;
+  deletedAt: Date | null;
+  equipmentGroups: { items: { equipmentId: string }[] }[];
+};
+
 /**
  * CRUD de ejercicios del pool (RF-001). Nombre único entre ejercicios no
  * borrados (RN-005) y borrado bloqueado si está en uso (RN-007), en un
  * bloque del pool o en un bloque copiado de una rutina.
+ *
+ * `equipmentGroups` (RF-017): cero o más grupos de equipo, cada uno con uno
+ * o más `equipmentId` alternativos entre sí (RN-014, validado en el DTO).
+ * Editar reemplaza por completo los grupos existentes: no hay "grupos"
+ * identificables individualmente por el cliente (decisión de la tarea,
+ * consistente con PATCH /blocks/:id).
  */
 @Injectable()
 export class ExercisesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
-    return this.prisma.exercise.findMany({
-      where: { deletedAt: null },
+  async findAll(equipmentId?: string) {
+    const where =
+      equipmentId === 'none'
+        ? { deletedAt: null, equipmentGroups: { none: {} } }
+        : equipmentId
+          ? {
+              deletedAt: null,
+              equipmentGroups: {
+                some: { items: { some: { equipmentId } } },
+              },
+            }
+          : { deletedAt: null };
+
+    const exercises = await this.prisma.exercise.findMany({
+      where,
+      include: EQUIPMENT_GROUPS_INCLUDE,
       orderBy: { name: 'asc' },
     });
+    return exercises.map((exercise) => this.toResponse(exercise));
   }
 
   async create(dto: CreateExerciseDto) {
     await this.ensureNameAvailable(dto.name);
-    return this.prisma.exercise.create({ data: { name: dto.name } });
+    await this.ensureEquipmentExists(dto.equipmentGroups);
+
+    const exercise = await this.prisma.exercise.create({
+      data: {
+        name: dto.name,
+        equipmentGroups: {
+          create: this.toEquipmentGroupsCreateInput(dto.equipmentGroups),
+        },
+      },
+      include: EQUIPMENT_GROUPS_INCLUDE,
+    });
+    return this.toResponse(exercise);
   }
 
   async update(id: string, dto: UpdateExerciseDto) {
     await this.findActiveOrFail(id);
     await this.ensureNameAvailable(dto.name, id);
-    return this.prisma.exercise.update({
-      where: { id },
-      data: { name: dto.name },
+    await this.ensureEquipmentExists(dto.equipmentGroups);
+
+    const exercise = await this.prisma.$transaction(async (tx) => {
+      await tx.equipmentGroup.deleteMany({ where: { exerciseId: id } });
+      return tx.exercise.update({
+        where: { id },
+        data: {
+          name: dto.name,
+          equipmentGroups: {
+            create: this.toEquipmentGroupsCreateInput(dto.equipmentGroups),
+          },
+        },
+        include: EQUIPMENT_GROUPS_INCLUDE,
+      });
     });
+    return this.toResponse(exercise);
   }
 
   async remove(id: string) {
     await this.findActiveOrFail(id);
     await this.ensureNotInUse(id);
-    return this.prisma.exercise.update({
+    const exercise = await this.prisma.exercise.update({
       where: { id },
       data: { deletedAt: new Date() },
+      include: EQUIPMENT_GROUPS_INCLUDE,
     });
+    return this.toResponse(exercise);
+  }
+
+  private toEquipmentGroupsCreateInput(equipmentGroups?: string[][]) {
+    return (equipmentGroups ?? []).map((group) => ({
+      items: { create: group.map((equipmentId) => ({ equipmentId })) },
+    }));
+  }
+
+  private toResponse(exercise: ExerciseWithGroups) {
+    return {
+      id: exercise.id,
+      name: exercise.name,
+      equipmentGroups: exercise.equipmentGroups.map((group) =>
+        group.items.map((item) => item.equipmentId),
+      ),
+      deletedAt: exercise.deletedAt,
+    };
+  }
+
+  private async ensureEquipmentExists(equipmentGroups?: string[][]) {
+    const equipmentIds = Array.from(new Set((equipmentGroups ?? []).flat()));
+    if (equipmentIds.length === 0) {
+      return;
+    }
+
+    const existing = await this.prisma.equipment.findMany({
+      where: { id: { in: equipmentIds }, deletedAt: null },
+      select: { id: true },
+    });
+    const existingIds = new Set(existing.map((equipment) => equipment.id));
+    const missing = equipmentIds.filter((id) => !existingIds.has(id));
+
+    if (missing.length > 0) {
+      throw new NotFoundWithCodeException(
+        'Uno o más elementos de equipo no existen o fueron borrados.',
+        'EQUIPMENT_NOT_FOUND',
+      );
+    }
   }
 
   private async findActiveOrFail(id: string) {

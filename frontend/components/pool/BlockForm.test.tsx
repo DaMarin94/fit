@@ -5,8 +5,8 @@ import { BlockForm } from "./BlockForm";
 import type { Exercise } from "@/types/domain";
 
 const poolExercises: Exercise[] = [
-  { id: "ex-1", name: "Goblet squats", deletedAt: null },
-  { id: "ex-2", name: "Burpees", deletedAt: null },
+  { id: "ex-1", name: "Goblet squats", equipmentGroups: [], deletedAt: null },
+  { id: "ex-2", name: "Burpees", equipmentGroups: [], deletedAt: null },
 ];
 
 describe("BlockForm", () => {

@@ -4,10 +4,10 @@ Estado de implementación. Una línea por feature. El detalle funcional vive en 
 
 | Feature | Requerimiento | Estado |
 |---|---|---|
-| Pool de elementos (crear, editar, listar, borrar) | RF-016 | No implementada |
-| Grupos de equipo por ejercicio (requisitos fijos y alternativas) | RF-017, RN-014 | No implementada |
-| Filtro del pool de ejercicios por elemento | RF-018 | No implementada |
-| Bloqueo de borrado de un elemento en uso | RN-013 | No implementada |
+| Pool de elementos (crear, editar, listar, borrar) | RF-016 | Implementada |
+| Grupos de equipo por ejercicio (requisitos fijos y alternativas) | RF-017, RN-014 | Implementada |
+| Filtro del pool de ejercicios por elemento | RF-018 | Implementada |
+| Bloqueo de borrado de un elemento en uso | RN-013 | Implementada |
 | Pool de ejercicios (crear, editar, listar, borrar) | RF-001 | Implementada |
 | Pool de bloques (crear, editar, listar, borrar) | RF-002, RF-003 | Implementada |
 | Gestión de rutinas (crear, editar, listar, borrar) | RF-004 | Implementada |
@@ -24,7 +24,7 @@ Estado de implementación. Una línea por feature. El detalle funcional vive en 
 | Avance entre bloques automático o manual | RF-011 | Implementada |
 | Confirmación al salir con el timer corriendo | RN-010 | Implementada |
 | Funcionamiento offline y sincronización | RN-004 | No implementada |
-| Registro de historial al terminar (incluye el equipamiento congelado) | RF-012, RF-013, RN-015 | Parcial — el registro y el snapshot andan; falta el equipamiento congelado, que depende de `Equipment` |
+| Registro de historial al terminar (incluye el equipamiento congelado) | RF-012, RF-013, RN-015 | Implementada |
 | Consulta de historial agrupada por semana y día | RF-014 | Parcial — lista y detalle del snapshot completo andan; falta la agrupación por semana y día calendario (RN-012) |
 | Toggle de tema claro/oscuro con persistencia | RF-015, RN-011 | Implementada |
-| Semilla con el plan de ejemplo | `requirements.md` §6 | Parcial — cargada sin elementos ni grupos de equipo |
+| Semilla con el plan de ejemplo | `requirements.md` §6 | Implementada |

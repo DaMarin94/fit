@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ListSkeleton } from "@/components/ui/Skeleton";
 import { listWorkoutLogs } from "@/lib/api/workout-logs";
-import type { WorkoutLog } from "@/types/domain";
+import type { WorkoutLog, WorkoutLogSnapshotEquipmentGroups } from "@/types/domain";
 
 /**
  * Historial (`docs/screens.md` §7). Alcance de Fase 1 (`docs/roadmap.md`):
@@ -24,6 +24,56 @@ const TYPE_LABEL: Record<WorkoutLog["snapshot"]["blocks"][number]["type"], strin
   intervalos: "Intervalos",
   cardio_libre: "Libre (cardio)",
 };
+
+/**
+ * Línea de equipo congelado del snapshot (`docs/design.md` §11.2-§11.5,
+ * `docs/requirements.md` RN-015). Mismo lenguaje visual que `EquipmentLine`
+ * de `pool/page.tsx`, pero los grupos ya son nombres por valor: no hay
+ * `equipmentId` que resolver.
+ */
+function SnapshotEquipmentLine({ groups }: { groups: WorkoutLogSnapshotEquipmentGroups }) {
+  if (groups.length === 0) {
+    return (
+      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+        <span className="sr-only">Equipo: </span>
+        Sin equipo
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="sr-only">Equipo: </span>
+      {groups.map((group, groupIndex) => (
+        <span key={groupIndex} className="inline-flex items-center gap-1.5">
+          {groupIndex > 0 ? (
+            <span
+              className="text-xs font-bold uppercase"
+              style={{ color: "var(--text-muted)", letterSpacing: "0.08em" }}
+            >
+              Y
+            </span>
+          ) : null}
+          <span
+            className="inline-flex min-h-6 items-center rounded-[var(--r-sm)] border px-2 py-0.5 text-[13px] font-medium"
+            style={{ borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text)" }}
+          >
+            {group.map((name, itemIndex) => (
+              <span key={`${name}-${itemIndex}`} style={{ overflowWrap: "anywhere" }}>
+                {itemIndex > 0 ? (
+                  <span className="mx-1" style={{ color: "var(--text-muted)" }}>
+                    o
+                  </span>
+                ) : null}
+                {name}
+              </span>
+            ))}
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
 
 function formatDate(iso: string): string {
   return new Intl.DateTimeFormat("es-AR", {
@@ -118,10 +168,17 @@ export default function HistorialPage() {
                         </span>
                         <ul className="flex flex-col gap-0.5 pl-3">
                           {block.exercises.map((exercise) => (
-                            <li key={`${exercise.order}-${exercise.name}`} className="text-sm" style={{ color: "var(--text)" }}>
-                              {exercise.name}
-                              {exercise.reps ? ` · ${exercise.reps} reps` : ""}
-                              {exercise.duration ? ` · ${exercise.duration}s` : ""}
+                            <li
+                              key={`${exercise.order}-${exercise.name}`}
+                              className="flex flex-col gap-0.5 py-0.5 text-sm"
+                              style={{ color: "var(--text)" }}
+                            >
+                              <span>
+                                {exercise.name}
+                                {exercise.reps ? ` · ${exercise.reps} reps` : ""}
+                                {exercise.duration ? ` · ${exercise.duration}s` : ""}
+                              </span>
+                              <SnapshotEquipmentLine groups={exercise.equipmentGroups} />
                             </li>
                           ))}
                         </ul>

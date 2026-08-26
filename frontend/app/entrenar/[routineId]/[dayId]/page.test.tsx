@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
 describe("EntrenarPage", () => {
   it("carga la rutina, resuelve el día y los nombres de ejercicios, y muestra Modo entrenar", async () => {
     vi.spyOn(exercisesApi, "listExercises").mockResolvedValue([
-      { id: "ex-1", name: "Goblet squats", deletedAt: null },
+      { id: "ex-1", name: "Goblet squats", equipmentGroups: [], deletedAt: null },
     ]);
     vi.spyOn(routinesApi, "getRoutine").mockResolvedValue({
       id: "r1",

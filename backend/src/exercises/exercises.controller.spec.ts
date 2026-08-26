@@ -26,7 +26,16 @@ describe('ExercisesController', () => {
 
     const result = await controller.findAll();
 
-    expect(service.findAll).toHaveBeenCalled();
+    expect(service.findAll).toHaveBeenCalledWith(undefined);
+    expect(result).toEqual([{ id: '1' }]);
+  });
+
+  it('GET con ?equipmentId lo pasa al service.findAll (RF-018)', async () => {
+    service.findAll.mockResolvedValue([{ id: '1' }]);
+
+    const result = await controller.findAll('eq1');
+
+    expect(service.findAll).toHaveBeenCalledWith('eq1');
     expect(result).toEqual([{ id: '1' }]);
   });
 

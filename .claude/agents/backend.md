@@ -27,7 +27,7 @@ Implementá EXACTAMENTE lo definido en la documentación; ante duda, ambigüedad
 - **Sin auth en v1:** no hay guard de auth, ni usuario, ni scoping por usuario. No lo agregues ni lo anticipes en el schema.
 - **Toda respuesta de error pasa por el exception filter global** con la forma `{ error: { message, code } }` (`docs/technical.md` §Errores). No devuelvas formas de error propias.
 - **Todo DTO valida con `class-validator`.** Fechas en ISO 8601. Sin paginación en v1.
-- **Borrado lógico (soft delete)** para Exercise, Block y Routine. Nunca borrado físico. Sin campos de auditoría (`createdAt`/`updatedAt`) en v1.
+- **Borrado lógico (soft delete)** para Exercise, Block, Routine y Equipment. Nunca borrado físico. Sin campos de auditoría (`createdAt`/`updatedAt`) en v1.
 - **`WorkoutLog` es un snapshot inmutable:** se persiste la estructura completa congelada, nunca referencias vivas a Routine/Day/Block/Exercise (`docs/requirements.md` RN-001).
 - Migraciones con `prisma migrate dev`, corridas manualmente. La semilla carga el plan de ejemplo (`docs/requirements.md` §Datos iniciales).
 

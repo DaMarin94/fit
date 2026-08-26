@@ -30,7 +30,21 @@ export class WorkoutLogsService {
           include: {
             exercises: {
               orderBy: { order: 'asc' },
-              include: { exercise: true },
+              include: {
+                exercise: {
+                  include: {
+                    equipmentGroups: {
+                      orderBy: { id: 'asc' },
+                      include: {
+                        items: {
+                          orderBy: { id: 'asc' },
+                          include: { equipment: true },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -60,6 +74,11 @@ export class WorkoutLogsService {
           order: exercise.order,
           reps: exercise.reps,
           duration: exercise.duration,
+          // RN-015: congela los grupos de equipo con los nombres de los
+          // elementos por valor, no por referencia a Equipment.
+          equipmentGroups: exercise.exercise.equipmentGroups.map((group) =>
+            group.items.map((item) => item.equipment.name),
+          ),
         })),
       })),
     };

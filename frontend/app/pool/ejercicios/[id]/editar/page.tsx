@@ -6,7 +6,8 @@ import { ExerciseForm } from "@/components/pool/ExerciseForm";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ListSkeleton } from "@/components/ui/Skeleton";
 import { listExercises, updateExercise } from "@/lib/api/exercises";
-import type { Exercise } from "@/types/domain";
+import { listEquipment } from "@/lib/api/equipment";
+import type { Equipment, Exercise } from "@/types/domain";
 
 /**
  * Editar ejercicio. No hay `GET /exercises/:id` en el contrato
@@ -19,9 +20,16 @@ export default function EditExercisePage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
 
+  const [equipment, setEquipment] = useState<Equipment[] | null>(null);
   const [state, setState] = useState<
     { status: "loading" } | { status: "error" } | { status: "not-found" } | { status: "ready"; exercise: Exercise }
   >({ status: "loading" });
+
+  useEffect(() => {
+    listEquipment()
+      .then(setEquipment)
+      .catch(() => setEquipment([]));
+  }, []);
 
   useEffect(() => {
     listExercises()
@@ -32,8 +40,8 @@ export default function EditExercisePage() {
       .catch(() => setState({ status: "error" }));
   }, [id]);
 
-  async function handleSubmit(name: string) {
-    await updateExercise(id, { name });
+  async function handleSubmit(values: { name: string; equipmentGroups: string[][] }) {
+    await updateExercise(id, values);
     router.push("/pool");
   }
 
@@ -63,9 +71,12 @@ export default function EditExercisePage() {
       {state.status === "ready" ? (
         <ExerciseForm
           initialName={state.exercise.name}
+          initialEquipmentGroups={state.exercise.equipmentGroups}
           submitLabel="Guardar cambios"
           onSubmit={handleSubmit}
           onCancel={() => router.push("/pool")}
+          poolEquipment={equipment}
+          onCreateEquipment={() => router.push("/pool/elementos/nuevo")}
         />
       ) : null}
     </div>

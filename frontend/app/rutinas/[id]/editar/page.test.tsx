@@ -16,7 +16,7 @@ describe("EditRoutinePage", () => {
   it("precarga la rutina y guarda con PUT", async () => {
     const user = userEvent.setup();
     vi.spyOn(exercisesApi, "listExercises").mockResolvedValue([
-      { id: "ex-1", name: "Goblet squats", deletedAt: null },
+      { id: "ex-1", name: "Goblet squats", equipmentGroups: [], deletedAt: null },
     ]);
     vi.spyOn(blocksApi, "listBlocks").mockResolvedValue([]);
     vi.spyOn(routinesApi, "getRoutine").mockResolvedValue({

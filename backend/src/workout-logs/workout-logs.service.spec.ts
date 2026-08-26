@@ -38,7 +38,12 @@ const dayWithTree = {
           order: 0,
           reps: 12,
           duration: null,
-          exercise: { name: 'goblet squats con kettlebell' },
+          exercise: {
+            name: 'goblet squats con kettlebell',
+            equipmentGroups: [
+              { items: [{ equipment: { name: 'kettlebell' } }] },
+            ],
+          },
         },
       ],
     },
@@ -108,6 +113,7 @@ describe('WorkoutLogsService', () => {
                     order: 0,
                     reps: 12,
                     duration: null,
+                    equipmentGroups: [['kettlebell']],
                   },
                 ],
               },
@@ -133,6 +139,69 @@ describe('WorkoutLogsService', () => {
       });
 
       expect(result.performedAt).toEqual(new Date('2026-08-20T10:00:00.000Z'));
+    });
+
+    it('congela el equipamiento con los nombres por valor, preservando grupos de alternativas (RN-015)', async () => {
+      prisma.routine.findFirst.mockResolvedValue({
+        id: 'r1',
+        name: 'Plan semanal',
+      });
+      prisma.day.findFirst.mockResolvedValue({
+        id: 'day1',
+        routineId: 'r1',
+        order: 0,
+        blocks: [
+          {
+            order: 0,
+            name: "Fuerza AMRAP 12'",
+            type: 'metcon',
+            timerConfig: { totalDurationSeconds: 720 },
+            advanceMode: 'manual',
+            exercises: [
+              {
+                order: 0,
+                reps: 10,
+                duration: null,
+                exercise: {
+                  name: 'remos',
+                  equipmentGroups: [
+                    {
+                      items: [
+                        { equipment: { name: 'kettlebell' } },
+                        { equipment: { name: 'mancuernas' } },
+                      ],
+                    },
+                  ],
+                },
+              },
+              {
+                order: 1,
+                reps: 6,
+                duration: null,
+                exercise: { name: 'burpees', equipmentGroups: [] },
+              },
+            ],
+          },
+        ],
+      });
+      prisma.workoutLog.create.mockImplementation(
+        ({ data }: WorkoutLogCreateArgs) => ({ id: 'log1', ...data }),
+      );
+
+      const result = (await service.create('r1', 'day1', {})) as unknown as {
+        snapshot: {
+          blocks: {
+            exercises: { name: string; equipmentGroups: string[][] }[];
+          }[];
+        };
+      };
+
+      expect(result.snapshot.blocks[0].exercises[0].equipmentGroups).toEqual([
+        ['kettlebell', 'mancuernas'],
+      ]);
+      expect(result.snapshot.blocks[0].exercises[1].equipmentGroups).toEqual(
+        [],
+      );
     });
   });
 

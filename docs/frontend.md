@@ -19,6 +19,7 @@ Las tres tabs de `screens.md` §1 son las rutas raíz: `/` (Mis rutinas), `/pool
 | `/pool` | Pool (`screens.md` §4) |
 | `/pool/ejercicios/nuevo`, `/pool/ejercicios/[id]/editar` | Alta y edición de ejercicio del pool |
 | `/pool/bloques/nuevo`, `/pool/bloques/[id]/editar` | Alta y edición de bloque del pool |
+| `/pool/elementos/nuevo`, `/pool/elementos/[id]/editar` | Alta y edición de elemento del pool |
 | `/entrenar/[routineId]/[dayId]` | Modo entrenar (`screens.md` §5) |
 | `/historial` | Historial (`screens.md` §7) |
 
@@ -31,7 +32,8 @@ Las tres tabs de `screens.md` §1 son las rutas raíz: `/` (Mis rutinas), `/pool
 | `ToastProvider` | Visor de toasts, montado en el layout raíz |
 | `ThemeToggle` | Control de modo de color, montado en el header (RF-015, RN-011) |
 | `RoutineEditor` | Editor del árbol de la rutina: días, bloques encadenados y sus ejercicios. Agregar un bloque —copiándolo del pool o creándolo ad-hoc (RF-006)— se resuelve en un overlay de pantalla completa. Reordenar días, bloques y ejercicios es con botones ↑/↓ |
-| `QuickSelector` | El selector rápido único de `screens.md` §6, usado tanto para bloques como para ejercicios. Se muestra como hoja inferior en compacto y como diálogo centrado en amplio |
+| `EquipmentForm` | Formulario de alta y edición de un elemento del pool: solo el nombre, mismo patrón que `ExerciseForm` |
+| `QuickSelector` | El selector rápido único de `screens.md` §6, usado para bloques, ejercicios y elementos. Elige elementos al armar un grupo de equipo en `ExerciseForm` y resuelve el filtro de ejercicios por elemento en Pool — ahí el listado va precedido por dos ítems sintéticos, "Todos los equipos" y "Sin equipo", que no son elementos reales del pool. Se muestra como hoja inferior en compacto y como diálogo centrado en amplio |
 | `TrainingScreen` | Modo entrenar completo (`screens.md` §5): consume `use-session` y pinta fase, tiempo, ejercicio actual y los controles de RF-010 / RF-011 |
 | `ConfirmDialog` | Diálogo de confirmación genérico. Lo usan la confirmación de salida de Modo entrenar (RN-010) y el resto de las confirmaciones destructivas de `screens.md` §8 |
 | `lib/training/exit-guard-store.ts` | Store que marca si hay una sesión de entrenamiento en curso. `NavBar` lo consulta antes de navegar para interceptar la salida (RN-010); el propio store intercepta además `popstate` y `beforeunload` |
@@ -54,7 +56,7 @@ Wrapper de llamadas HTTP, manejo de errores y toasts. El estándar está en `doc
 |---|---|
 | `lib/http/api-client.ts` | Único punto de salida de requests. Entiende las dos formas de éxito (`{ data }` o el recurso directo) y la forma de error (`{ error: { message, code } }`) de `data-model.md` §4.1. Ante cualquier error —incluido fallo de red— dispara el toast por su cuenta y relanza un `ApiError` con su `code`, para que el componente pueda hacer manejo específico |
 | `lib/toast/toast-store.ts` | Store pub-sub sin dependencias de React; los componentes lo consumen con `useSyncExternalStore` |
-| `lib/api/exercises.ts`, `blocks.ts`, `routines.ts`, `workout-logs.ts` | Wrappers tipados por recurso sobre `api-client`. Son el único lugar donde el frontend nombra rutas del backend; los componentes llaman funciones, no URLs. Los endpoints están en `docs/backend.md` §Endpoints |
+| `lib/api/exercises.ts`, `blocks.ts`, `equipment.ts`, `routines.ts`, `workout-logs.ts` | Wrappers tipados por recurso sobre `api-client`. Son el único lugar donde el frontend nombra rutas del backend; los componentes llaman funciones, no URLs. Los endpoints están en `docs/backend.md` §Endpoints |
 | `lib/validation/schemas.ts` | Esquemas Zod que espejan el contrato del backend y validan los formularios antes de enviar: nombre obligatorio, tiempos y repeticiones positivos (RN-006) y `timerConfig` según el `type` del bloque. La unicidad de nombre (RN-005) no se resuelve acá: la decide el backend y llega como `NAME_TAKEN`. El backend igual revalida todo; esto es feedback inmediato, no la fuente de verdad |
 
 ## Offline
@@ -88,7 +90,7 @@ Vitest + React Testing Library, TDD estricto (`docs/technical.md` §Testing). Ac
 
 Cubiertos con tests escritos antes que la implementación: el tema y su boot script, el store de toasts, el cliente HTTP y los wrappers de `lib/api` (con `fetch` mockeado), los esquemas Zod, el `NavBar` en sus dos disposiciones, las pantallas y el motor del timer.
 
-El grueso del esfuerzo está en el **motor del timer probado sin UI**: `session-plan` y `session-engine` no dependen de React, así que se ejercitan con tics de tiempo inyectados en vez de renderizar y esperar. La suite completa son 173 tests.
+El grueso del esfuerzo está en el **motor del timer probado sin UI**: `session-plan` y `session-engine` no dependen de React, así que se ejercitan con tics de tiempo inyectados en vez de renderizar y esperar. La suite completa son 204 tests en 43 archivos.
 
 ## Gotchas
 
@@ -97,3 +99,5 @@ El grueso del esfuerzo está en el **motor del timer probado sin UI**: `session-
 - **"Terminar entrenamiento" está disponible en cualquier momento** después de iniciar, no solo al cerrar el último bloque: `screens.md` §5 no lo restringe.
 - **El aviso de transiciones (RF-009) no tiene componente propio.** Lo resuelve la propia pantalla al ser reactiva —el color de fase, el rótulo y el número cambian en el instante de la transición— más `aria-live` para que se anuncie. No se agregó un toast ni un cartel nuevo porque `docs/design.md` no especifica ninguno.
 - **Los campos de tiempo de los formularios de bloque son segundos crudos**, no un par minuto + segundo: `docs/design.md` no especifica ese control.
+- **La línea de equipo de solo lectura está duplicada a propósito.** Pool y el detalle de Historial la pintan con dos componentes locales distintos —`EquipmentLine` en `app/pool/page.tsx`, que resuelve `equipmentId` → nombre contra un mapa armado con el pool de elementos, y `SnapshotEquipmentLine` en `app/historial/page.tsx`, que ya recibe los nombres congelados por valor (RN-015)—. Las dos siguen el mismo spec visual (`docs/design.md` §11.2-§11.5: contención para el "O", cajas separadas con la palabra "Y" en mayúscula para el "Y", sin color). No hay un componente compartido porque no existía un patrón previo de componente común a esas dos pantallas.
+- **Un grupo de equipo vacío no es un estado alcanzable en el editor.** En `ExerciseForm`, "Agregar equipo" abre el selector rápido de una y el grupo nace con su primer elemento; quitar el último elemento hace desaparecer el grupo, y no hay botón "quitar grupo" propio. RN-014 se cumple por construcción: el guardado nunca se bloquea por el equipo.

@@ -104,7 +104,7 @@ El **toggle de tema claro/oscuro** (RF-015, RN-011) no es un destino ni un tab: 
 
 > **Notas para `design`:**
 > - Los tres listados conviven en una sola pantalla. Cómo se presentan (secciones, tabs internos u otra cosa) y dónde va el control de filtro son decisiones visuales, no funcionales. Si la carga de la pantalla amerita separar elementos en una superficie propia, `design` lo plantea y se reabre acá.
-> - **Cómo se distingue visualmente un requisito fijo de un grupo de alternativas** —tanto al editar un ejercicio como al mostrarlo en el listado— está sin resolver y es decisión de `design`. Lo funcional es que la diferencia entre "necesita mancuernas **y** banco" y "necesita mancuernas **o** kettlebell" tiene que quedar clara sin abrir el ejercicio.
+> - **La diferencia entre "necesita mancuernas *y* banco" y "necesita mancuernas *o* kettlebell" tiene que quedar clara sin abrir el ejercicio.** Es el criterio funcional; cómo se distingue visualmente un requisito fijo de un grupo de alternativas, al editar y en el listado, lo fija `docs/design.md` §11.
 
 ---
 
@@ -168,6 +168,7 @@ El comportamiento del timer depende del tipo del bloque (RF-008): EMOM, AMRAP, i
 | Editor de rutina | Un bloque del pool, para copiarlo a un día |
 | Edición de bloque | Un ejercicio del pool |
 | Edición de ejercicio | Un elemento del pool, para agregarlo a un grupo de equipo |
+| Pool (listado de ejercicios) | Un elemento, "Sin equipo" o "Todos los equipos", para filtrar el listado (RF-018). Los dos últimos son ítems sintéticos antepuestos al listado real, no elementos del pool |
 
 **Estados:** cargando; pool vacío (mensaje + CTA que lleva a crear la pieza que falta); búsqueda sin resultados; con datos.
 

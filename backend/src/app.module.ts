@@ -12,6 +12,7 @@ import { ExercisesModule } from './exercises/exercises.module';
 import { BlocksModule } from './blocks/blocks.module';
 import { RoutinesModule } from './routines/routines.module';
 import { WorkoutLogsModule } from './workout-logs/workout-logs.module';
+import { EquipmentModule } from './equipment/equipment.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { WorkoutLogsModule } from './workout-logs/workout-logs.module';
     BlocksModule,
     RoutinesModule,
     WorkoutLogsModule,
+    EquipmentModule,
   ],
   controllers: [AppController],
   providers: [

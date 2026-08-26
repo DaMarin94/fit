@@ -40,7 +40,7 @@ describe("HistorialPage", () => {
               type: "fuerza",
               timerConfig: { totalDurationSeconds: 720, taskIntervalSeconds: 60 },
               advanceMode: "manual",
-              exercises: [{ name: "Goblet squats", order: 0, reps: 12, duration: null }],
+              exercises: [{ name: "Goblet squats", order: 0, reps: 12, duration: null, equipmentGroups: [["Kettlebell"]] }],
             },
           ],
         },
@@ -66,7 +66,7 @@ describe("HistorialPage", () => {
               type: "fuerza",
               timerConfig: { totalDurationSeconds: 720, taskIntervalSeconds: 60 },
               advanceMode: "manual",
-              exercises: [{ name: "Goblet squats", order: 0, reps: 12, duration: null }],
+              exercises: [{ name: "Goblet squats", order: 0, reps: 12, duration: null, equipmentGroups: [["Kettlebell"]] }],
             },
           ],
         },
@@ -80,6 +80,51 @@ describe("HistorialPage", () => {
     const detail = screen.getByTestId("workout-log-detail");
     expect(within(detail).getByText("Fuerza EMOM 12'")).toBeInTheDocument();
     expect(within(detail).getByText(/goblet squats/i)).toBeInTheDocument();
+    expect(within(detail).getByText("Kettlebell")).toBeInTheDocument();
+  });
+
+  it("detalle: ejercicio con varios grupos de equipo muestra los conectores O/Y, y sin equipo muestra el texto gris", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(workoutLogsApi, "listWorkoutLogs").mockResolvedValue([
+      {
+        id: "w1",
+        performedAt: "2026-08-20T10:00:00.000Z",
+        snapshot: {
+          routineName: "Plan semanal",
+          day: { order: 0 },
+          blocks: [
+            {
+              name: "Fuerza EMOM 12'",
+              type: "fuerza",
+              timerConfig: { totalDurationSeconds: 720, taskIntervalSeconds: 60 },
+              advanceMode: "manual",
+              exercises: [
+                {
+                  name: "Goblet squats",
+                  order: 0,
+                  reps: 12,
+                  duration: null,
+                  equipmentGroups: [["Kettlebell", "Mancuerna"], ["Colchoneta"]],
+                },
+                { name: "Burpees", order: 1, reps: 10, duration: null, equipmentGroups: [] },
+              ],
+            },
+          ],
+        },
+      },
+    ]);
+
+    render(<HistorialPage />);
+    const item = await screen.findByRole("button", { name: /ver detalle de plan semanal/i });
+    await user.click(item);
+
+    const detail = screen.getByTestId("workout-log-detail");
+    expect(within(detail).getByText("Kettlebell")).toBeInTheDocument();
+    expect(within(detail).getByText("Mancuerna")).toBeInTheDocument();
+    expect(within(detail).getByText("Colchoneta")).toBeInTheDocument();
+    expect(within(detail).getByText("o")).toBeInTheDocument();
+    expect(within(detail).getByText("Y")).toBeInTheDocument();
+    expect(within(detail).getByText("Sin equipo")).toBeInTheDocument();
   });
 
   it("error con reintentar", async () => {

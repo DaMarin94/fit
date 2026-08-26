@@ -407,7 +407,212 @@ Se cumplen **siempre**, en todo ancho ≥375px, en los dos modos de color:
 
 ---
 
-## 11. Voz de la interfaz
+## 11. Equipo de un ejercicio: requisito fijo vs. alternativas
+
+Spec de la Fase 2 (RF-016 a RF-018, RN-013 a RN-015). Lo funcional está cerrado en `docs/requirements.md` y `docs/screens.md` §4 y no se redefine acá: un ejercicio declara **cero o más grupos**, dentro del grupo la relación es **O** (cualquiera sirve) y entre grupos es **Y** (hacen falta todos). Lo que esta sección fija es **cómo se ve esa estructura de dos niveles**, para que "mancuernas **y** banco" no se pueda confundir con "mancuernas **o** kettlebell".
+
+### 11.1 La regla: un grupo = una caja
+
+**Un grupo se dibuja siempre como una sola caja, incluso si tiene un solo elemento.** La caja *es* el grupo: lo que está adentro son alternativas, lo que está afuera es otro requisito.
+
+El riesgo que esta regla ataja: una fila de chips sueltos (`kettlebell` `mancuernas` `banco`) se lee por convención como una lista de etiquetas equivalentes —es decir, se lee como **O**—, que es exactamente la lectura equivocada la mitad de las veces. Por eso la estructura no se delega a la separación entre chips.
+
+La distinción se apoya en **tres señales redundantes**, nunca en el color:
+
+| Señal | Dentro del grupo (O) | Entre grupos (Y) |
+|---|---|---|
+| **Contención** | Mismo contenedor | Contenedores distintos |
+| **Conector** | `o` minúscula | `Y` mayúscula |
+| **Posición del conector** | Adentro de la caja | Afuera, sobre el fondo |
+
+`o` y `Y` son palabras reales y visibles, no íconos ni glifos: se leen igual en pantalla, en lector de pantalla y en escala de grises. Y son la misma palabra que usa la doc funcional para describir el modelo, así que no hay código propio que aprender.
+
+**Prohibido acá:** teñir chips de equipo con el acento o con un semántico; usar `+`, `&`, `/` o un ícono como conector; separar grupos solo con espacio, coma o punto medio.
+
+### 11.2 Chip de grupo (variante de solo lectura)
+
+Es la pieza que aparece en cualquier superficie que **muestre** el equipo de un ejercicio sin editarlo: el listado del pool, y más adelante el detalle del historial (RN-015).
+
+| Propiedad | Valor |
+|---|---|
+| Caja | `inline-flex`, `align-items: center`, alto mínimo **24px**, padding **2px 8px** |
+| Radio | `--r-sm` (8px) |
+| Fondo | `--surface-2` (los dos modos) |
+| Borde | 1px `--border` (los dos modos) |
+| Texto | Inter **13 / 18, peso 500**, color `--text`, sin tracking extra |
+| Contenido | Los nombres de los elementos del grupo, en el orden en que los devuelve la API, unidos por el conector `o` |
+| Conector interno `o` | Mismo tamaño y peso, color **`--text-muted`**, 4px de aire a cada lado |
+| Interactividad | **Ninguna.** No es botón ni link, no tiene hover ni foco: el renglón entero del ejercicio ya es el destino de edición. Un chip clickeable prometería un filtro que no existe ahí |
+
+En claro el chip queda apenas hundido respecto del `--surface` de la tarjeta; en oscuro queda apenas elevado. Es intencional y coherente con §2: en cada modo la separación se consigue por el lado que funciona, con contraste equivalente.
+
+### 11.3 Conector `Y` entre grupos
+
+| Propiedad | Valor |
+|---|---|
+| Texto | `Y` en mayúscula |
+| Tipografía | Inter **12 / 16, peso 700**, mayúsculas, `letter-spacing: +0.08em` |
+| Color | `--text-muted` |
+| Ubicación | **Fuera** de todo chip, sobre el fondo del renglón; 6px de aire a cada lado |
+
+Vive fuera de la caja a propósito: la posición ya dice de qué nivel habla, antes de leer la letra.
+
+### 11.4 La línea de equipo en el listado del pool
+
+Cada renglón de ejercicio del Pool (`docs/screens.md` §4) pasa a tener dos líneas:
+
+- **Línea 1 — nombre del ejercicio:** Inter 16 / 24, peso 600, `--text`.
+- **Línea 2 — equipo:** 4px debajo del nombre, alineada a su izquierda. Es un contenedor que envuelve (`flex-wrap`) con **6px de gap** horizontal y vertical, y contiene los chips de grupo intercalados con el conector `Y`.
+
+El renglón conserva su forma actual: tarjeta `--surface`, borde 1px `--border`, radio `--r-lg`, padding 12px 16px, y el botón de borrar de 44×44 a la derecha, centrado verticalmente respecto del renglón completo.
+
+Cómo se lee, con los datos de la semilla (`requirements.md` §6.1):
+
+```
+goblet squats con kettlebell
+[ kettlebell ]
+
+remos
+[ kettlebell o mancuernas ]
+
+(hipotético, dos grupos)
+press de banca
+[ mancuernas ]  Y  [ banco ]
+
+burpees
+Sin equipo
+```
+
+**Sin prefijo ni ícono.** El renglón de ejercicio muestra una sola clase de metadato —el equipo—, así que un rótulo "Equipo:" sería ruido permanente para desambiguar algo que no está ambiguo (§1, silencio visual). El contexto lo aporta la etiqueta oculta de §11.10 para lectores de pantalla.
+
+**Esqueleto de carga:** la fila de esqueleto del listado de ejercicios pasa a tener dos barras: una de 16px de alto al 60% del ancho (nombre) y otra de 14px al 45% (equipo), separadas 4px. El esqueleto tiene la forma del contenido real (§6.4).
+
+**Los tres listados del Pool** siguen siendo secciones apiladas en una sola pantalla, en el orden **Ejercicios → Bloques → Elementos**, separadas 32px. No se introducen tabs internos: la app ya tiene una barra de tabs de navegación y una segunda fila de tabs adentro de una pantalla obliga a distinguir dos metáforas idénticas con significados distintos. El renglón de **Elemento** usa el mismo patrón que el de Ejercicio pero de una sola línea (nombre + borrar 44×44), sin línea de equipo.
+
+### 11.5 "Sin equipo" nunca es un chip
+
+Un ejercicio sin grupos muestra, en la línea 2, el texto **"Sin equipo"** en Inter 14 / 20, peso 400, `--text-muted`. Sin caja, sin borde, sin fondo.
+
+Es una regla dura: **un chip significa "necesitás esto"**. Dibujar la ausencia de equipo con la misma forma que un requisito rompe la única convención que esta sección construye, y en un listado escaneado de reojo se leería como "necesita algo llamado sin equipo".
+
+### 11.6 Editor de grupos (edición de ejercicio)
+
+La pantalla de edición de ejercicio (`ExerciseForm`) suma, **32px debajo del campo Nombre**, una sección "Equipo".
+
+**Encabezado de la sección**
+- Título "Equipo": Inter 17 / 24, peso 600, `--text`.
+- Ayuda, una línea, siempre visible, 4px debajo: Inter 14 / 20, `--text-muted` — *"Cada equipo que agregues es algo que el ejercicio necesita. Si se puede reemplazar, agregale alternativas: con cualquiera alcanza."*
+
+La ayuda es permanente y no se esconde en un tooltip: el modelo de dos niveles es la única cosa no obvia de esta pantalla, y se toca cada varios meses (nadie lo memoriza).
+
+**Tarjeta de grupo**
+
+| Propiedad | Valor |
+|---|---|
+| Fondo | `--surface` |
+| Borde | 1px `--border` |
+| Radio | `--r-md` (12px) |
+| Padding | 8px |
+
+**Fila de elemento** (dentro de la tarjeta)
+
+| Propiedad | Valor |
+|---|---|
+| Alto | mínimo **44px** |
+| Fondo | `--surface-2` · Radio `--r-sm` |
+| Texto | Inter 16 / 24, peso 400, `--text`, sangría izquierda 12px, `overflow-wrap: anywhere` |
+| Quitar | Botón de ícono **44×44** al extremo derecho, `XMarkIcon` de trazo 24px |
+
+**Conector `o` entre filas del mismo grupo:** fila propia de 20px de alto, texto `o` en Inter 13 / 18, peso 500, `--text-muted`, alineado a la izquierda con la misma sangría de 12px que el texto de las filas. Sin línea, sin caja: la unidad visual de la tarjeta ya está haciendo el trabajo.
+
+**Conector `Y` entre tarjetas:** fila propia de 20px de alto con 8px de aire arriba y abajo. A 12px del borde izquierdo, el texto `Y` con el estilo de §11.3; 8px después, una línea de 1px `--border` que llega hasta el borde derecho. La línea es la que hace evidente que ahí hay un corte estructural, y la palabra es la que dice cuál.
+
+**Botón "Agregar alternativa"** (dentro de la tarjeta, 4px debajo de la última fila)
+- Variante **sutil** de §6.3: fondo transparente, texto `--text-muted`, Inter 13 / 18 peso 600, ícono `+` de trazo 20px, alineado a la izquierda con sangría 12px, alto 44px, ancho completo de la tarjeta.
+- Hover / foco: fondo `--accent-tint` y texto + ícono en `--accent`.
+
+**Botón "Agregar equipo"** (fuera de las tarjetas, 12px debajo de la última)
+- Variante **secundaria** de §6.3: `--surface` + borde 1px `--border-strong`, texto `--text`, Inter 14 / 20 peso 600, ícono `+` de trazo 20px en `--text-muted`, contenido centrado, ancho completo, alto 48px, radio `--r-md`.
+- Etiqueta: **"Agregar equipo"** cuando no hay ningún grupo; **"Agregar otro equipo"** cuando ya hay al menos uno.
+
+Los dos botones de agregar se diferencian por forma y por palabra, no por color: uno es una caja de ancho completo centrada y afuera ("otro **equipo**" = Y), el otro es texto alineado a la izquierda adentro de una tarjeta ("**alternativa**" = O). Las palabras enseñan el modelo solas. **No se inventa una variante "dashed"** ni ninguna otra fuera de las cuatro de §6.3.
+
+**Un solo control de quita, un solo camino.** No hay botón "quitar grupo" separado: se quitan elementos, y **cuando se quita el último elemento el grupo desaparece con él**. Dos controles de borrado para el mismo resultado (la X de la única fila y una X de la tarjeta) obligarían al usuario a preguntarse cuál es cuál cada vez. Quitar un requisito de dos alternativas cuesta dos toques, y es el caso raro (1 de 15 ejercicios de la semilla).
+
+### 11.7 Estados
+
+**El grupo vacío no existe como estado persistente.** "Agregar equipo" **abre directamente el selector rápido** sobre elementos (`docs/screens.md` §6); el grupo nace con su primer elemento adentro. Consecuencias:
+
+- RN-014 se cumple **por construcción**: el formulario nunca queda inválido por el equipo, y **el botón de guardar nunca se bloquea** por esta sección. La única validación de la pantalla sigue siendo el nombre.
+- **Placeholder de destino:** mientras el selector está abierto por "Agregar equipo", en el lugar donde va a caer la tarjeta se muestra una caja de 60px de alto, borde 1px `--border-strong`, radio `--r-md`, fondo transparente, con el texto centrado "Elegí el primer elemento" (Inter 13 / 18, peso 500, `--text-muted`). Si el selector se cierra sin elegir, el placeholder desaparece y **no se crea ningún grupo**.
+- Al quitar el último elemento, la tarjeta desaparece con una transición de opacidad de 120ms; con `prefers-reduced-motion: reduce`, sin transición ni desplazamiento (§9).
+
+**Los siete estados de los controles de esta sección (§6.2):**
+
+| Control | Reposo | Hover | Foco | Presionado | Deshabilitado | Cargando | Error |
+|---|---|---|---|---|---|---|---|
+| **X de quitar elemento** | Ícono `--text-muted` | Fondo `--danger-tint`, ícono `--danger` | Anillo 2px `--accent`, offset 2px (visible también sobre hover) | Escala 0.98 | No aplica: nunca se deshabilita | No aplica: es edición local, no llama al backend | No aplica |
+| **Agregar alternativa** | Sutil, `--text-muted` | Fondo `--accent-tint`, texto `--accent` | Anillo 2px `--accent`, offset 2px | Escala 0.98 | Nunca | No aplica: abre un modal, y el modal tiene su propio esqueleto | No aplica |
+| **Agregar equipo** | Secundario | Borde `--text-muted`… fondo `--surface-2` | Anillo 2px `--accent`, offset 2px | Escala 0.98 | Nunca — aun con el pool de elementos vacío, porque el selector muestra su propio estado vacío con el CTA que lo resuelve, y un botón muerto sería un callejón (§6.2) | No aplica | No aplica |
+
+**La X de quitar no pide confirmación.** La regla de confirmación destructiva (§6.3) gobierna lo que se persiste; acá es una edición de formulario todavía no guardada y trivialmente reversible (se vuelve a agregar). Pedir un diálogo por cada elemento convertiría una edición de tres toques en una de nueve. El carmesí aparece **en la interacción** (hover/foco/press), no en reposo: en reposo, una columna de X rojas en cada fila pintaría la pantalla de alarma sin que haya ninguna.
+
+**Selector rápido invocado desde acá:** título "Agregar equipo" cuando crea un grupo, "Agregar alternativa" cuando suma al grupo existente. Su forma (hoja inferior en compacto, diálogo de 560px en amplio) y sus estados ya están fijados y no cambian.
+
+**Estado "sin ningún grupo" en el editor:** en lugar de tarjetas, una sola línea en Inter 14 / 20, `--text-muted` — *"Sin equipo. Se hace con el peso del cuerpo."* — y debajo el botón "Agregar equipo". **No se usa el estado vacío de pantalla de §6.4** (ícono de trazo + `h2` + CTA): eso está reservado para una pantalla que no tiene nada que mostrar. Acá el vacío es un valor **válido, correcto y frecuente** (9 de los 15 ejercicios de la semilla), no un problema a resolver; dibujarlo como un vacío alarmaría sobre un ejercicio que está perfecto.
+
+### 11.8 Filtro de ejercicios por elemento — **agregado no solicitado, confirmar**
+
+RF-018 es de esta misma fase y su control comparte pantalla con la línea de equipo, así que **hay que resolver el choque visual sí o sí**: si el filtro se dibujara como una fila de chips, esos chips serían indistinguibles de los chips de grupo que están dos líneas más abajo. Lo que sigue evita ese choque; el orquestador confirma antes de que `frontend` lo tome.
+
+- **El filtro no se dibuja con chips.** Es un **botón de filtro** al tope de la sección Ejercicios, alineado a la izquierda, alto 44px, variante secundaria, con el texto "Todos los equipos" cuando no hay filtro y un ícono de chevron a la derecha.
+- **Con filtro activo el botón se convierte en una píldora de acento:** fondo `--accent-tint`, texto `--accent` (Inter 14 / 20, peso 600), con el nombre del elemento ("Kettlebell" / "Sin equipo") y una **X de 44×44 para limpiarlo**. El acento acá está permitido y es exacto: es **estado activo de un control**, no dato teñido (§3.1). Queda establecido el contraste de lectura de toda la pantalla: **chip neutro = dato; acento = control activo.**
+- Las opciones se presentan con la misma forma que el selector rápido (hoja inferior en compacto, diálogo centrado en amplio), con "Todos los equipos" y "Sin equipo" arriba de la lista de elementos.
+- **Filtro sin resultados:** mensaje de `docs/screens.md` §4 más un botón sutil "Limpiar filtro"; el botón de filtro activo permanece visible arriba para que nunca haya una lista vacía sin causa a la vista.
+
+> **Señal para el analista (vía orquestador):** `docs/screens.md` §4 no dice **con qué forma** se presenta el selector de opciones del filtro, y §6 documenta el selector rápido como invocable desde tres lugares que no incluyen el filtro. Si el filtro reusa ese componente, §6 necesita una línea; si no, es un control propio. Segunda señal: **no está definido si un mismo elemento puede repetirse en dos grupos del mismo ejercicio** (RN-014 no lo dice). Hasta que se defina, el selector lista todos los elementos sin deshabilitar ninguno; si la regla resultara ser "no se repite", los ya usados se muestran deshabilitados con la razón visible al lado, nunca ocultos.
+
+### 11.9 Contención responsive
+
+**La sección de equipo no cambia de disposición.** Mismas cajas, mismo orden, mismos conectores en compacto y en amplio; lo único que cambia es el ancho del contenedor que la hospeda (100% − 16px en compacto, `max-width: 960px` en amplio). No se introduce ningún breakpoint fuera de `--bp-wide` (§8.1).
+
+| Invariante (§8.4) | Cómo se cumple acá |
+|---|---|
+| **1 · Sin scroll horizontal del `body`** | La línea de equipo **envuelve** (`flex-wrap`) con gap de 6px. Los nombres largos parten dentro del chip con `overflow-wrap: anywhere`. El conector `Y` viaja **pegado al chip que le sigue** (los dos en un `inline-flex` con 6px de gap) para que nunca quede huérfano al final de una línea |
+| **2 · Modales completos y scrolleables** | El selector rápido ya cumple y no se modifica (90dvh, hoja en compacto, 560px en amplio) |
+| **3 · Ninguna acción inalcanzable** | Los botones de agregar viven en el flujo del formulario, no en popovers; la pantalla mantiene los 96px libres al final (§8.3) |
+| **4 · Las superficies anchas scrollean en sí mismas** | **No aplica por decisión explícita:** la línea de equipo **nunca** scrollea en horizontal. Un requisito escondido fuera del borde es una pérdida funcional —el usuario cree que sabe qué necesita y le falta el banco—, y en un listado que se escanea de arriba a abajo el usuario no descubre que había más a la derecha. Se prefiere una segunda línea de alto |
+
+A 375px, el chip más largo de la semilla (`kettlebell o mancuernas`) mide unos 160px: entran dos grupos por línea, y tres grupos ocupan dos líneas sin cortar nada.
+
+### 11.10 Accesibilidad
+
+- **Los conectores son texto real**, así que el lector de pantalla lee "kettlebell o mancuernas Y banco" sin ayuda extra. No se usan `aria-label` que dupliquen o contradigan lo visible.
+- La línea de equipo del listado arranca con una etiqueta **visualmente oculta** "Equipo: ", para dar contexto a quien no ve la maquetación.
+- **Ningún estado depende del color** (§13): la estructura Y/O es forma + palabra; el filtro activo es acento **más** el nombre del elemento **más** la X.
+- Contrastes verificados en los dos modos: texto de chip `--text` sobre `--surface-2` (claro 15.8:1, oscuro 13.9:1); conectores `--text-muted` sobre `--bg`/`--surface` (≥ 5.5:1 en los dos modos); ícono X en `--danger` sobre `--danger-tint` (≥ 4.5:1).
+- Targets: X de quitar **44×44**; filas de elemento **≥44px** de alto; botones de agregar 44px y 48px; separación mínima de 8px entre targets adyacentes.
+
+### 11.11 Checklist de aceptación visual
+
+1. **Listado — grupo fijo:** "goblet squats con kettlebell" muestra **un** chip con la palabra `kettlebell` y nada más.
+2. **Listado — grupo alternativo:** "remos" muestra **un solo** chip que dice `kettlebell o mancuernas`, con el `o` en gris más claro que los nombres.
+3. **Listado — dos grupos:** un ejercicio con dos grupos muestra **dos** chips separados por una `Y` mayúscula que está **fuera** de las cajas, sobre el fondo del renglón.
+4. **Listado — sin equipo:** "burpees" muestra el texto `Sin equipo` en gris, **sin caja, sin borde y sin fondo**.
+5. **Neutralidad:** ningún chip de equipo usa violeta, verde, carmesí ni ámbar, en modo claro y en modo oscuro; el texto del chip se lee cómodo en los dos.
+6. **375px:** ninguna línea de equipo genera scroll horizontal ni queda cortada; el conector `Y` nunca aparece solo al final de una línea.
+7. **Editor — dos niveles:** dos grupos se ven como dos tarjetas separadas por la fila `Y` + línea fina; dos alternativas del mismo grupo se ven como dos filas dentro de **la misma** tarjeta separadas por la `o` minúscula.
+8. **Editor — crear grupo:** "Agregar equipo" abre el selector; cerrarlo sin elegir **no deja ninguna tarjeta ni ningún grupo vacío** en pantalla.
+9. **Editor — quitar:** quitar el último elemento de un grupo hace desaparecer la tarjeta completa; no hay ningún otro botón de "quitar grupo".
+10. **Editor — X:** cada X mide 44×44, en reposo es gris, en hover/foco se pone carmesí con fondo tenue, y el anillo de foco es visible con teclado.
+11. **Editor — sin equipo:** un ejercicio sin grupos muestra la línea "Sin equipo. Se hace con el peso del cuerpo." y el botón "Agregar equipo", **sin** ícono grande ni estado vacío de pantalla.
+12. **Guardar:** el botón de guardar nunca queda deshabilitado por la sección de equipo.
+13. **Movimiento:** con `prefers-reduced-motion: reduce`, quitar un elemento no anima desplazamientos.
+14. **(Si se confirma §11.8) Filtro:** el control de filtro no se dibuja con chips neutros; con filtro activo es una píldora en tinte de acento con el nombre del elemento y una X de 44×44 para limpiarlo, y nunca se confunde con un chip de equipo.
+
+---
+
+## 12. Voz de la interfaz
 
 - **Español rioplatense, voseo, segunda persona.** "Empezá", "Guardá", "Agregá un bloque".
 - Botones con el **verbo real** de la acción, nunca "Aceptar"/"OK" en decisiones con consecuencia.
@@ -417,7 +622,7 @@ Se cumplen **siempre**, en todo ancho ≥375px, en los dos modos de color:
 
 ---
 
-## 12. Prohibiciones (resumen ejecutable)
+## 13. Prohibiciones (resumen ejecutable)
 
 1. Numerales del timer en tipografía que no sea mono + tabular.
 2. Verde, rojo o ámbar usados para algo que no sea éxito, destructivo/error o advertencia.
@@ -431,6 +636,7 @@ Se cumplen **siempre**, en todo ancho ≥375px, en los dos modos de color:
 10. Sidebar o cualquier navegación lateral persistente.
 11. Superficies, textos o íconos que impliquen otros usuarios.
 12. Specs que declaren un solo modo de color, o que no declaren su comportamiento en compacto.
+13. Chips de equipo teñidos con el acento o con un semántico, "Sin equipo" dibujado como chip, o la relación Y/O expresada con un glifo (`+`, `&`, `/`) en lugar de la palabra.
 
 ---
 
@@ -449,3 +655,9 @@ Se cumplen **siempre**, en todo ancho ≥375px, en los dos modos de color:
 | 2026-08-25 | Modo de color: sigue al sistema por defecto; la elección manual se guarda y prevalece (RN-011) | Default sin fricción; el toggle mantiene dos posiciones, sin tercer estado "auto", y el modo se resuelve antes del primer pintado para evitar el flash blanco |
 | 2026-08-25 | Toggle de tema: header de Mis rutinas en compacto, barra superior en amplio | No merece un slot de tab ni compite con las acciones contextuales de los otros headers; misma esquina en los dos regímenes |
 | 2026-08-25 | Salir de Modo entrenar con el timer corriendo pide confirmación (RN-010) | Es el error irreversible más caro de la app; el default seguro es quedarse, y el timer sigue corriendo y visible durante el diálogo |
+| 2026-08-26 | Un grupo de equipo se dibuja siempre como una caja, aun con un solo elemento (§11.1) | Una fila de chips sueltos se lee por convención como "O"; la caja hace visible el nivel del grupo sin que el usuario tenga que interpretar espacios |
+| 2026-08-26 | La relación Y/O se comunica con las palabras `o` (adentro, minúscula) e `Y` (afuera, mayúscula), nunca con color ni glifo | Tres señales redundantes —contención, palabra y posición—; funciona en escala de grises, con daltonismo y en lector de pantalla, y usa el mismo vocabulario que la doc funcional |
+| 2026-08-26 | "Sin equipo" se muestra como texto gris, nunca como chip (§11.5) | Un chip significa "necesitás esto"; dibujar la ausencia con la forma del requisito rompe la única convención que la pantalla enseña |
+| 2026-08-26 | En el editor no hay botón "quitar grupo": el grupo muere con su último elemento, y "Agregar equipo" abre el selector de una (§11.6, §11.7) | Un solo control de quita evita dos caminos para el mismo resultado, y crear el grupo con su primer elemento hace que RN-014 se cumpla por construcción: el formulario nunca queda inválido por el equipo |
+| 2026-08-26 | La línea de equipo envuelve y nunca scrollea en horizontal (§11.9) | Un requisito escondido fuera del borde derecho es una pérdida funcional: el usuario cree que sabe qué necesita y le falta el banco |
+| 2026-08-26 | Chip neutro = dato; acento = control activo. El filtro por elemento no usa chips (§11.8, a confirmar) | Sin esa separación, los chips de filtro y los de equipo serían indistinguibles en la misma pantalla |

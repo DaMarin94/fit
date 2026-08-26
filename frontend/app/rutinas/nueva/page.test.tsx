@@ -15,7 +15,7 @@ describe("NewRoutinePage", () => {
   it("crea la rutina y vuelve a Mis rutinas", async () => {
     const user = userEvent.setup();
     vi.spyOn(exercisesApi, "listExercises").mockResolvedValue([
-      { id: "ex-1", name: "Goblet squats", deletedAt: null },
+      { id: "ex-1", name: "Goblet squats", equipmentGroups: [], deletedAt: null },
     ]);
     vi.spyOn(blocksApi, "listBlocks").mockResolvedValue([
       {

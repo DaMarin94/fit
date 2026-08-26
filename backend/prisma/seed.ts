@@ -10,7 +10,7 @@ import { AdvanceMode, BlockType, PrismaClient } from '@prisma/client';
  */
 const prisma = new PrismaClient();
 
-type ExerciseSeed = { name: string };
+type ExerciseSeed = { name: string; equipmentGroups?: string[][] };
 
 type BlockExerciseSeed = { exerciseName: string; reps?: number; duration?: number };
 
@@ -22,15 +22,27 @@ type BlockSeed = {
   exercises: BlockExerciseSeed[];
 };
 
+/** Elementos del pool de equipamiento (RF-016, docs/requirements.md §6.1). */
+const EQUIPMENT_NAMES = ['kettlebell', 'mancuernas', 'soga', 'silla'];
+
+/**
+ * Ejercicios del pool con sus grupos de equipo (RF-017, §6.1). Cada grupo es
+ * una lista de nombres de elementos alternativos; "remos" es el único caso
+ * de grupo con más de un elemento (kettlebell o mancuernas). Sin grupos =
+ * sin equipo (peso corporal).
+ */
 const EXERCISES: ExerciseSeed[] = [
-  { name: 'goblet squats con kettlebell' },
-  { name: 'zancadas con mancuernas' },
-  { name: 'swings con kettlebell' },
-  { name: 'sentadillas con kettlebell' },
-  { name: 'shoulder press con mancuernas' },
-  { name: 'saltos con soga' },
-  { name: 'dips en silla' },
-  { name: 'remos' },
+  { name: 'goblet squats con kettlebell', equipmentGroups: [['kettlebell']] },
+  { name: 'zancadas con mancuernas', equipmentGroups: [['mancuernas']] },
+  { name: 'swings con kettlebell', equipmentGroups: [['kettlebell']] },
+  { name: 'sentadillas con kettlebell', equipmentGroups: [['kettlebell']] },
+  {
+    name: 'shoulder press con mancuernas',
+    equipmentGroups: [['mancuernas']],
+  },
+  { name: 'saltos con soga', equipmentGroups: [['soga']] },
+  { name: 'dips en silla', equipmentGroups: [['silla']] },
+  { name: 'remos', equipmentGroups: [['kettlebell', 'mancuernas']] },
   { name: 'burpees' },
   { name: 'sit ups' },
   { name: 'push ups' },
@@ -154,13 +166,38 @@ async function main() {
     return;
   }
 
+  const equipmentIdByName = new Map<string, string>();
+  for (const name of EQUIPMENT_NAMES) {
+    const existing = await prisma.equipment.findFirst({
+      where: { name, deletedAt: null },
+    });
+    const record =
+      existing ?? (await prisma.equipment.create({ data: { name } }));
+    equipmentIdByName.set(name, record.id);
+  }
+  console.log(`Elementos de equipamiento listos: ${equipmentIdByName.size}`);
+
   const exerciseIdByName = new Map<string, string>();
   for (const exercise of EXERCISES) {
     const existing = await prisma.exercise.findFirst({
       where: { name: exercise.name, deletedAt: null },
     });
     const record =
-      existing ?? (await prisma.exercise.create({ data: { name: exercise.name } }));
+      existing ??
+      (await prisma.exercise.create({
+        data: {
+          name: exercise.name,
+          equipmentGroups: {
+            create: (exercise.equipmentGroups ?? []).map((group) => ({
+              items: {
+                create: group.map((equipmentName) => ({
+                  equipmentId: equipmentIdByName.get(equipmentName)!,
+                })),
+              },
+            })),
+          },
+        },
+      }));
     exerciseIdByName.set(exercise.name, record.id);
   }
   console.log(`Ejercicios listos: ${exerciseIdByName.size}`);

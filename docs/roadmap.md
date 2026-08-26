@@ -69,7 +69,7 @@ Además: toggle de tema claro/oscuro funcional en el header de Mis rutinas (RF-0
 
 ---
 
-## Fase 2 — Equipamiento — **es la fase actual**
+## Fase 2 — Equipamiento — **Hecha**
 
 **Cubre:** RF-016, RF-017, RF-018, RN-013, RN-014, RN-015.
 
@@ -87,11 +87,11 @@ Además: toggle de tema claro/oscuro funcional en el header de Mis rutinas (RF-0
 - Editor de grupos de equipo dentro de la edición de ejercicio, con el selector rápido sobre elementos.
 - Filtro del listado de ejercicios por elemento, visible y limpiable.
 
-> **Spec visual pendiente para `design`:** cómo se distingue un requisito fijo de un grupo de alternativas ("mancuernas **Y** banco" vs. "mancuernas **O** kettlebell"), al editar un ejercicio y en el listado del pool. Lo funcional ya está fijado en `screens.md` §4; la decisión visual se produce por el paso 4.6 del flujo del orquestador (design → frontend por spec) antes de implementar esta fase.
+> **Spec visual:** `docs/design.md` §11.
 
 ---
 
-## Fase 3 — Offline en Modo entrenar
+## Fase 3 — Offline en Modo entrenar — **es la fase actual**
 
 **Cubre:** RN-004, RNF-004. Decisiones estructurales en `technical.md` §8 y `architecture.md` §5.
 

@@ -1,6 +1,6 @@
 // Prisma schema — Fit backend
 // Fase 0: Exercise, Block (+ BlockExercise), Routine, Day (+ bloques copiados), WorkoutLog.
-// Equipment / EquipmentGroup entran en la Fase 2 (docs/roadmap.md).
+// Fase 2: Equipment / EquipmentGroup (+ EquipmentGroupItem).
 
 generator client {
   provider = "prisma-client-js"
@@ -34,6 +34,41 @@ model Exercise {
 
   blockExercises    BlockExercise[]
   dayBlockExercises DayBlockExercise[]
+  equipmentGroups   EquipmentGroup[]
+}
+
+// Elemento de equipamiento del pool (data-model.md §2.1, RF-016).
+model Equipment {
+  id        String    @id @default(cuid())
+  name      String
+  deletedAt DateTime?
+
+  groupItems EquipmentGroupItem[]
+}
+
+// Grupo de equipo declarado por un Exercise (data-model.md §2.3, RF-017).
+// NO es una entidad del pool: no tiene nombre ni identidad reutilizable,
+// vive y muere con el Exercise que lo declara. Entre grupos es "Y"; dentro
+// de un grupo (items) es "O". Un grupo vacío no es representable (RN-014),
+// validado en la capa de aplicación.
+model EquipmentGroup {
+  id         String @id @default(cuid())
+  exerciseId String
+
+  exercise Exercise             @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  items    EquipmentGroupItem[]
+}
+
+// Elemento alternativo dentro de un grupo: join table entre EquipmentGroup y
+// Equipment. La referencia desde acá bloquea el borrado del elemento
+// (RN-013), igual que BlockExercise bloquea el borrado del ejercicio.
+model EquipmentGroupItem {
+  id               String @id @default(cuid())
+  equipmentGroupId String
+  equipmentId      String
+
+  equipmentGroup EquipmentGroup @relation(fields: [equipmentGroupId], references: [id], onDelete: Cascade)
+  equipment      Equipment      @relation(fields: [equipmentId], references: [id])
 }
 
 // Bloque de entrenamiento del pool (data-model.md §2.4).

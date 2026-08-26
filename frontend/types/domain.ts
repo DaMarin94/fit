@@ -31,9 +31,27 @@ export type TimerConfig =
   | IntervalosTimerConfig
   | CardioLibreTimerConfig;
 
+/**
+ * Elemento de equipamiento (RF-016), pool reutilizable propio. Mismo
+ * patrón que `Exercise` y `Block`.
+ */
+export type Equipment = {
+  id: string;
+  name: string;
+  deletedAt: string | null;
+};
+
+/**
+ * Grupos de equipo de un ejercicio (RF-017, RN-014): lista de grupos, cada
+ * grupo una lista de `equipmentId` alternativos entre sí (O); entre grupos
+ * la relación es Y. `[]` = sin equipo (peso corporal).
+ */
+export type EquipmentGroups = string[][];
+
 export type Exercise = {
   id: string;
   name: string;
+  equipmentGroups: EquipmentGroups;
   deletedAt: string | null;
 };
 
@@ -109,11 +127,20 @@ export type RoutineInput = {
   days: RoutineDayInput[];
 };
 
+/**
+ * Grupos de equipo tal como quedaron congelados en un snapshot de
+ * historial (RN-015): mismo shape de dos niveles, pero por **nombre**
+ * (string), no por `equipmentId` — distinto del `EquipmentGroups` de
+ * `Exercise`, que es por ID.
+ */
+export type WorkoutLogSnapshotEquipmentGroups = string[][];
+
 export type WorkoutLogSnapshotExercise = {
   name: string;
   order: number;
   reps: number | null;
   duration: number | null;
+  equipmentGroups: WorkoutLogSnapshotEquipmentGroups;
 };
 
 export type WorkoutLogSnapshotBlock = {

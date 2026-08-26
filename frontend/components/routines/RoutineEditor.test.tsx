@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
 
-const poolExercises = [{ id: "ex-1", name: "Goblet squats", deletedAt: null }];
+const poolExercises = [{ id: "ex-1", name: "Goblet squats", equipmentGroups: [], deletedAt: null }];
 const poolBlocks = [
   {
     id: "pb-1",

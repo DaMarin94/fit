@@ -24,6 +24,18 @@ export class ExerciseInUseException extends ConflictException {
   }
 }
 
+/** RN-013: no se borra un elemento referenciado por algún grupo de equipo
+ * de algún ejercicio. Mismo criterio que ExerciseInUseException (RN-007). */
+export class EquipmentInUseException extends ConflictException {
+  constructor() {
+    super({
+      message:
+        'No se puede borrar: el elemento está en uso en uno o más ejercicios. Sacalo del ejercicio primero.',
+      code: 'EQUIPMENT_IN_USE',
+    });
+  }
+}
+
 /** 404 genérico con `code` explícito, para no repetir la forma en cada
  * módulo (ej. EXERCISE_NOT_FOUND, BLOCK_NOT_FOUND, ROUTINE_NOT_FOUND). */
 export class NotFoundWithCodeException extends NotFoundException {

@@ -1,5 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
 import {
+  EquipmentInUseException,
   ExerciseInUseException,
   NameTakenException,
   NotFoundWithCodeException,
@@ -25,6 +26,15 @@ describe('Excepciones de dominio', () => {
     const body = exception.getResponse() as { message: string; code: string };
     expect(body.code).toBe('EXERCISE_IN_USE');
     expect(body.message).toContain('bloque');
+  });
+
+  it('EquipmentInUseException responde 409 con code EQUIPMENT_IN_USE', () => {
+    const exception = new EquipmentInUseException();
+
+    expect(exception.getStatus()).toBe(HttpStatus.CONFLICT);
+    const body = exception.getResponse() as { message: string; code: string };
+    expect(body.code).toBe('EQUIPMENT_IN_USE');
+    expect(body.message).toContain('ejercicio');
   });
 
   it('NotFoundWithCodeException responde 404 con el code recibido', () => {

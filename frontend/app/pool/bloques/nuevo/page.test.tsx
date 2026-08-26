@@ -14,7 +14,7 @@ describe("NewBlockPage", () => {
   it("crea el bloque y vuelve al pool", async () => {
     const user = userEvent.setup();
     vi.spyOn(exercisesApi, "listExercises").mockResolvedValue([
-      { id: "ex-1", name: "Goblet squats", deletedAt: null },
+      { id: "ex-1", name: "Goblet squats", equipmentGroups: [], deletedAt: null },
     ]);
     const createSpy = vi.spyOn(blocksApi, "createBlock").mockResolvedValue({
       id: "b-1",
