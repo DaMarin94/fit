@@ -24,6 +24,7 @@ Definida en `docs/data-model.md` §4. En resumen: éxito devuelve el recurso o `
 
 - **Una capa centralizada de llamadas HTTP** (wrapper con interceptor) es el único punto por el que salen los requests. Ningún componente llama `fetch` directo.
 - El interceptor detecta la forma de error y la muestra como **toast**. Los componentes no repiten manejo de error genérico.
+- El llamador puede pedir el request en modo **`silent`** para los caminos donde la app se degrada con gracia y el usuario no pierde nada (cache offline, cola de sincronización): el error se propaga igual, solo se omite el aviso automático. Avisar ahí sería reportar como falla algo que en los hechos no rompió nada.
 - El manejo específico (por ejemplo, marcar un campo del formulario a partir de un `code`) se hace en el componente, sobre el error que la capa le devuelve.
 
 ---

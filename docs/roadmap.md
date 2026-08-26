@@ -71,7 +71,7 @@ Además: toggle de tema claro/oscuro funcional en el header de Mis rutinas (RF-0
 
 ## Fase 2 — Equipamiento — **Hecha**
 
-**Cubre:** RF-016, RF-017, RF-018, RN-013, RN-014, RN-015.
+**Cubre:** RF-016, RF-017, RF-018, RN-013, RN-014, RN-015. Lo construido está documentado en `docs/backend.md` y `docs/frontend.md`.
 
 ### Backend
 
@@ -91,9 +91,9 @@ Además: toggle de tema claro/oscuro funcional en el header de Mis rutinas (RF-0
 
 ---
 
-## Fase 3 — Offline en Modo entrenar — **es la fase actual**
+## Fase 3 — Offline en Modo entrenar — **Hecha**
 
-**Cubre:** RN-004, RNF-004. Decisiones estructurales en `technical.md` §8 y `architecture.md` §5.
+**Cubre:** RN-004, RNF-004. Decisiones estructurales en `technical.md` §8 y `architecture.md` §5. Es una capa solo de frontend: lo construido está documentado en `docs/frontend.md` §Offline.
 
 - Cache local del día a entrenar en el frontend.
 - El timer corre sin red, sin depender del backend para contar ni avisar transiciones.
@@ -102,7 +102,7 @@ Además: toggle de tema claro/oscuro funcional en el header de Mis rutinas (RF-0
 
 ---
 
-## Fase 4 — Historial completo y pulido
+## Fase 4 — Historial completo y pulido — **es la fase actual**
 
 **Cubre:** RF-014 en su forma final y el cierre de calidad de la v1.
 

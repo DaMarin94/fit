@@ -7,8 +7,15 @@ export function listRoutines(): Promise<RoutineSummary[]> {
   return apiFetch<RoutineSummary[]>("/routines");
 }
 
-export function getRoutine(id: string): Promise<Routine> {
-  return apiFetch<Routine>(`/routines/${id}`);
+/**
+ * `options.silent` reenvía el flag de `apiFetch` (`docs/technical.md` §2.2)
+ * para el caso puntual de Modo entrenar, que intenta la carga en silencio
+ * antes de resolver contra la cache offline (RN-004).
+ */
+export function getRoutine(id: string, options?: { silent?: boolean }): Promise<Routine> {
+  return options?.silent
+    ? apiFetch<Routine>(`/routines/${id}`, { silent: true })
+    : apiFetch<Routine>(`/routines/${id}`);
 }
 
 export function createRoutine(input: RoutineInput): Promise<Routine> {

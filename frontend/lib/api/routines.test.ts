@@ -36,6 +36,17 @@ describe("lib/api/routines", () => {
     expect(spy).toHaveBeenCalledWith("/routines/r1");
   });
 
+  it("getRoutine con options.silent reenvía silent: true a apiFetch", async () => {
+    const spy = vi.spyOn(apiClient, "apiFetch").mockResolvedValue({
+      id: "r1",
+      name: "x",
+      deletedAt: null,
+      days: [],
+    });
+    await getRoutine("r1", { silent: true });
+    expect(spy).toHaveBeenCalledWith("/routines/r1", { silent: true });
+  });
+
   it("createRoutine pega a POST /routines con el árbol completo", async () => {
     const spy = vi.spyOn(apiClient, "apiFetch").mockResolvedValue({
       id: "r1",

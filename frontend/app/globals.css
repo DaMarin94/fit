@@ -40,6 +40,7 @@
   --phase-rest-fg: #ffffff;
   --phase-idle-bg: #f1f3f7;
   --phase-idle-fg: #12151c;
+  --phase-veil: rgba(0, 0, 0, 0.14);
 
   --r-sm: 8px;
   --r-md: 12px;
@@ -76,10 +77,37 @@
   --phase-rest-fg: #58c8ee;
   --phase-idle-bg: #1d2430;
   --phase-idle-fg: #edf0f5;
+  --phase-veil: rgba(255, 255, 255, 0.1);
 }
 
 body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
+}
+
+/* Ícono de "Sincronizando" de la franja de estado de Modo entrenar
+   (`docs/design.md` §12.3, §12.6, §9): gira de forma continua; con
+   `prefers-reduced-motion: reduce` no rota, pulsa opacidad en su lugar. */
+@keyframes fit-sync-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fit-sync-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.fit-sync-icon {
+  animation: fit-sync-spin 1s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fit-sync-icon {
+    animation: fit-sync-pulse 1s ease-in-out infinite;
+  }
 }

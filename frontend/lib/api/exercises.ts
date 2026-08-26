@@ -8,11 +8,19 @@ import type { EquipmentGroups, Exercise } from "@/types/domain";
  * `?equipmentId=<id>` o `?equipmentId=none`.
  */
 
-export function listExercises(filter?: { equipmentId?: string }): Promise<Exercise[]> {
+/**
+ * `options.silent` reenvía el flag de `apiFetch` (`docs/technical.md` §2.2)
+ * para el caso puntual de Modo entrenar, que intenta la carga en silencio
+ * antes de resolver contra la cache offline (RN-004).
+ */
+export function listExercises(
+  filter?: { equipmentId?: string },
+  options?: { silent?: boolean },
+): Promise<Exercise[]> {
   const path = filter?.equipmentId
     ? `/exercises?equipmentId=${encodeURIComponent(filter.equipmentId)}`
     : "/exercises";
-  return apiFetch<Exercise[]>(path);
+  return options?.silent ? apiFetch<Exercise[]>(path, { silent: true }) : apiFetch<Exercise[]>(path);
 }
 
 export function createExercise(input: {

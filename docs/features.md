@@ -23,7 +23,7 @@ Estado de implementación. Una línea por feature. El detalle funcional vive en 
 | Pausar, reanudar y avanzar | RF-010 | Implementada |
 | Avance entre bloques automático o manual | RF-011 | Implementada |
 | Confirmación al salir con el timer corriendo | RN-010 | Implementada |
-| Funcionamiento offline y sincronización | RN-004 | No implementada |
+| Funcionamiento offline y sincronización | RN-004 | Implementada |
 | Registro de historial al terminar (incluye el equipamiento congelado) | RF-012, RF-013, RN-015 | Implementada |
 | Consulta de historial agrupada por semana y día | RF-014 | Parcial — lista y detalle del snapshot completo andan; falta la agrupación por semana y día calendario (RN-012) |
 | Toggle de tema claro/oscuro con persistencia | RF-015, RN-011 | Implementada |

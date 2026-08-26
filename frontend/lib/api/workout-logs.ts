@@ -11,9 +11,11 @@ export function createWorkoutLog(
   routineId: string,
   dayId: string,
   performedAt?: string,
+  options?: { silent?: boolean },
 ): Promise<WorkoutLog> {
   return apiFetch<WorkoutLog>(`/routines/${routineId}/days/${dayId}/workout-logs`, {
     method: "POST",
     body: performedAt ? { performedAt } : {},
+    silent: options?.silent,
   });
 }

@@ -25,6 +25,17 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Distingue "sin red" de un error real del servidor (`docs/technical.md`
+ * §8, offline). `apiFetch` es la única señal confiable: cualquier fallo del
+ * propio `fetch` (DNS, servidor caído, sin conexión) llega acá con el
+ * `code` `NETWORK_ERROR`; todo lo demás es una respuesta que sí llegó al
+ * backend, aunque sea de error.
+ */
+export function isNetworkError(error: unknown): boolean {
+  return error instanceof ApiError && error.code === "NETWORK_ERROR";
+}
+
 type ApiErrorBody = { error: { message: string; code: string } };
 
 function isErrorBody(body: unknown): body is ApiErrorBody {
@@ -68,10 +79,19 @@ function isPlainJsonBody(body: unknown): body is Record<string, unknown> | unkno
 
 export type ApiFetchOptions = Omit<RequestInit, "body"> & {
   body?: RequestInit["body"] | Record<string, unknown> | unknown[];
+  /**
+   * Opt-out puntual del toast genérico de error para este llamado (el
+   * `ApiError` se sigue lanzando igual, así el llamador lo puede manejar).
+   * Excepcional: el default sigue siendo mostrar el toast. Hoy solo lo usa
+   * el camino offline de "Terminar entrenamiento" (`TrainingScreen`), que
+   * decide localmente qué hacer con el error de red sin que la app trate
+   * la falta de conexión como una falla (`docs/design.md` §12).
+   */
+  silent?: boolean;
 };
 
-function fail(message: string, code: string): never {
-  showToast({ message });
+function fail(message: string, code: string, silent?: boolean): never {
+  if (!silent) showToast({ message });
   throw new ApiError(message, code);
 }
 
@@ -79,7 +99,7 @@ export async function apiFetch<T = unknown>(
   path: string,
   options: ApiFetchOptions = {},
 ): Promise<T> {
-  const { body, headers, ...rest } = options;
+  const { body, headers, silent, ...rest } = options;
   const requestInit: RequestInit = { ...rest, headers: { ...headers } };
 
   if (isPlainJsonBody(body)) {
@@ -96,7 +116,7 @@ export async function apiFetch<T = unknown>(
   try {
     response = await fetch(buildUrl(path), requestInit);
   } catch {
-    return fail(NETWORK_ERROR_MESSAGE, "NETWORK_ERROR");
+    return fail(NETWORK_ERROR_MESSAGE, "NETWORK_ERROR", silent);
   }
 
   const text = await response.text();
@@ -110,11 +130,11 @@ export async function apiFetch<T = unknown>(
   }
 
   if (isErrorBody(parsed)) {
-    return fail(parsed.error.message, parsed.error.code);
+    return fail(parsed.error.message, parsed.error.code, silent);
   }
 
   if (!response.ok) {
-    return fail(GENERIC_ERROR_MESSAGE, "UNKNOWN_ERROR");
+    return fail(GENERIC_ERROR_MESSAGE, "UNKNOWN_ERROR", silent);
   }
 
   return unwrap<T>(parsed);

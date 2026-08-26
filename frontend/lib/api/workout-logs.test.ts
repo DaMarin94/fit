@@ -27,4 +27,20 @@ describe("lib/api/workout-logs", () => {
       body: {},
     });
   });
+
+  it("createWorkoutLog pasa el flag silent a apiFetch cuando se pide", async () => {
+    const spy = vi.spyOn(apiClient, "apiFetch").mockResolvedValue({
+      id: "w1",
+      performedAt: "2026-01-01T00:00:00.000Z",
+      snapshot: { routineName: "x", day: { order: 0 }, blocks: [] },
+    });
+
+    await createWorkoutLog("r1", "d1", undefined, { silent: true });
+
+    expect(spy).toHaveBeenCalledWith("/routines/r1/days/d1/workout-logs", {
+      method: "POST",
+      body: {},
+      silent: true,
+    });
+  });
 });

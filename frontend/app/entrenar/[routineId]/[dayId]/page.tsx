@@ -7,6 +7,9 @@ import { ListSkeleton } from "@/components/ui/Skeleton";
 import { TrainingScreen } from "@/components/training/TrainingScreen";
 import { getRoutine } from "@/lib/api/routines";
 import { listExercises } from "@/lib/api/exercises";
+import { ApiError } from "@/lib/http/api-client";
+import { loadTrainingCache, saveTrainingCache } from "@/lib/offline/training-cache";
+import { showToast } from "@/lib/toast/toast-store";
 import type { Routine } from "@/types/domain";
 
 /**
@@ -14,6 +17,18 @@ import type { Routine } from "@/types/domain";
  * Trae el árbol completo de la rutina y el mapa de nombres de ejercicio
  * (los `BlockExercise` anidados no traen el nombre, `docs/data-model.md`
  * "Importante" en el contrato de Routines) antes de arrancar la sesión.
+ *
+ * Offline (RN-004, `docs/technical.md` §8): cada fetch online exitoso
+ * cachea la `Routine` completa + el mapa de nombres en IndexedDB, indexado
+ * por `routineId`. Si el fetch en vivo falla —sin distinguir el motivo,
+ * cachear en cada éxito es más simple y correcto que intentar detectarlo—
+ * se cae a esa cache como fallback antes de mostrar error.
+ *
+ * El fetch va con `silent: true` (`docs/technical.md` §2.2): si termina
+ * cayendo a la cache, la degradación es prolija (`docs/design.md` §12) y no
+ * amerita el toast rojo genérico. Solo cuando ni la cache resuelve —error
+ * real, `state.status === "error"`— se reemite el aviso a mano, mismo
+ * patrón que `TrainingScreen.handleFinish` con `createWorkoutLog`.
  */
 export default function EntrenarPage() {
   const params = useParams<{ routineId: string; dayId: string }>();
@@ -27,17 +42,38 @@ export default function EntrenarPage() {
   >({ status: "loading" });
 
   function fetchTraining() {
-    Promise.all([getRoutine(routineId), listExercises()])
+    Promise.all([
+      getRoutine(routineId, { silent: true }),
+      listExercises(undefined, { silent: true }),
+    ])
       .then(([routine, exercises]) => {
+        const exerciseNameById = new Map(exercises.map((e) => [e.id, e.name]));
+        void saveTrainingCache(routineId, routine, exerciseNameById);
         const day = routine.days.find((d) => d.id === dayId);
         if (!day) {
           setState({ status: "not-found" });
           return;
         }
-        const exerciseNameById = new Map(exercises.map((e) => [e.id, e.name]));
         setState({ status: "ready", routine, exerciseNameById });
       })
-      .catch(() => setState({ status: "error" }));
+      .catch((error: unknown) => {
+        loadTrainingCache(routineId).then((cached) => {
+          if (!cached) {
+            showToast({
+              message:
+                error instanceof ApiError ? error.message : "No se pudo cargar el entrenamiento.",
+            });
+            setState({ status: "error" });
+            return;
+          }
+          const day = cached.routine.days.find((d) => d.id === dayId);
+          if (!day) {
+            setState({ status: "not-found" });
+            return;
+          }
+          setState({ status: "ready", routine: cached.routine, exerciseNameById: cached.exerciseNameById });
+        });
+      });
   }
 
   function load() {

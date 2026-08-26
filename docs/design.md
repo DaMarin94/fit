@@ -589,7 +589,7 @@ A 375px, el chip más largo de la semilla (`kettlebell o mancuernas`) mide unos 
 
 - **Los conectores son texto real**, así que el lector de pantalla lee "kettlebell o mancuernas Y banco" sin ayuda extra. No se usan `aria-label` que dupliquen o contradigan lo visible.
 - La línea de equipo del listado arranca con una etiqueta **visualmente oculta** "Equipo: ", para dar contexto a quien no ve la maquetación.
-- **Ningún estado depende del color** (§13): la estructura Y/O es forma + palabra; el filtro activo es acento **más** el nombre del elemento **más** la X.
+- **Ningún estado depende del color** (§14): la estructura Y/O es forma + palabra; el filtro activo es acento **más** el nombre del elemento **más** la X.
 - Contrastes verificados en los dos modos: texto de chip `--text` sobre `--surface-2` (claro 15.8:1, oscuro 13.9:1); conectores `--text-muted` sobre `--bg`/`--surface` (≥ 5.5:1 en los dos modos); ícono X en `--danger` sobre `--danger-tint` (≥ 4.5:1).
 - Targets: X de quitar **44×44**; filas de elemento **≥44px** de alto; botones de agregar 44px y 48px; separación mínima de 8px entre targets adyacentes.
 
@@ -612,7 +612,186 @@ A 375px, el chip más largo de la semilla (`kettlebell o mancuernas`) mide unos 
 
 ---
 
-## 12. Voz de la interfaz
+## 12. Estado sin conexión en Modo entrenar
+
+Spec de la Fase 3 (RN-004, RNF-004). Lo funcional está cerrado en `docs/requirements.md` y `docs/screens.md` §5 y no se redefine acá: **la pantalla y el timer funcionan con la red caída, y el registro de historial se sincroniza al recuperar la conexión**. Lo que esta sección fija es **cómo se ve esa condición** dentro de una pantalla que ya está pintada a sangre completa con un color que cambia solo.
+
+### 12.1 Qué es y qué no es
+
+**Es una condición, no un evento.** Dura lo que dure la caída de red —pueden ser dos minutos o todo el entrenamiento— y no la provocó el usuario. Esa naturaleza descarta dos formas:
+
+- **No es un toast.** El toast es un aviso efímero de algo que *acaba de pasar*, con descarte y con vida corta. Un toast que se queda quince minutos rompe la promesa del patrón, y encima el visor de toasts se ancla al borde inferior en compacto: en Modo entrenar eso es exactamente donde vive el par pausar/avanzar de ≥72px (§6.1). Un aviso plantado sobre los dos controles que se tocan sin mirar, con la mano transpirada, es un riesgo de toque errado durante el timer.
+- **No es un banner de ancho completo.** Un banner grita "algo se rompió" y le roba altura al dato dominante. Acá **no se rompió nada**: el timer sigue contando igual y el usuario no tiene ninguna acción que tomar. Un cartel a todo lo ancho sobredimensiona una noticia que es, en el fondo, tranquilizadora.
+
+**Es una píldora de estado en una franja reservada**, arriba, chica, muda, sin acción y sin descarte.
+
+**Por qué no lleva X de descartar:** descartar una condición no la apaga, así que el control mentiría. Además pondría un target de 44×44 pegado al botón de volver, en la esquina superior, que es justo donde §1 dice que no va nada crítico y donde un toque errado abre el diálogo de salida.
+
+### 12.2 La franja de estado de la sesión
+
+Se introduce un **slot fijo**, no un elemento suelto: la **franja de estado de la sesión**. Es el único lugar de Modo entrenar donde se muestra una condición del sistema (hoy, la conectividad).
+
+| Propiedad | Valor |
+|---|---|
+| Ubicación | Fila propia de ancho completo, **8px debajo** de la fila del header (volver + "Bloque X de Y") y **arriba** del área del timer |
+| Alto | **40px** en compacto · **48px** en amplio. **Reservado siempre**, esté ocupada o vacía |
+| Contenido | Un solo elemento, centrado horizontal y verticalmente |
+| Fondo | Ninguno. Es transparente sobre el color de fase |
+| Interactividad | **Ninguna, nunca.** La franja no hospeda botones, links ni acciones |
+
+**Por qué el alto se reserva aunque esté vacía.** El área del timer es un `flex-1` centrado: si la franja apareciera y desapareciera, el número de 88px se correría verticalmente en el instante en que se cae la red —es decir, se movería justo mientras el usuario lo está mirando—. §4.2 prohíbe que el timer reflowee; el espíritu de esa regla es que **el número no se mueve nunca**, no solo al cambiar de dígito. Reservar 40px cuesta el 6% del alto de un 375×667 y compra cero salto. La alternativa evaluada —flotar la píldora en posición absoluta— evita el salto pero a 375px se le monta encima al nombre del bloque del header, así que se descarta.
+
+**Por qué centrada y no pegada a un borde.** En amplio, Modo entrenar es la única pantalla que ocupa todo el ancho (§7.2): una píldora anclada a la izquierda de un viewport de 1440px queda a 600px del eje donde el usuario tiene la vista. Centrada, cae en la misma columna óptica que el número, sin tocarlo.
+
+### 12.3 La píldora: cómo sobrevive a los tres fondos de fase
+
+El problema real: la píldora convive con seis superficies distintas (trabajo / descanso / preparación × claro / oscuro), y en modo claro el texto de fase **se invierte** (blanco sobre trabajo y descanso, casi negro sobre preparación). Ningún color fijo funciona en las seis.
+
+**La solución es no elegir ningún color: la píldora hereda el color de la fase.**
+
+- **Texto e ícono en `currentColor`**, que en Modo entrenar es siempre `--phase-*-fg`. El contraste queda garantizado por construcción, porque es el mismo par que ya usa el número del timer.
+- **Relleno con `--phase-veil`**, un velo neutro con alfa que **empuja el fondo en la dirección contraria al texto** en los seis casos, así que nunca baja el contraste: lo sube.
+- **Borde de 1px en `currentColor` al 35%**, para que la píldora quede delimitada aunque el velo sea sutil sobre una fase oscura.
+
+**Token nuevo** (familia `--phase-*`, así que **solo vive en Modo entrenar**, §3.1):
+
+```
+/* claro  */  --phase-veil   rgba(0, 0, 0, .14)
+/* oscuro */  --phase-veil   rgba(255, 255, 255, .10)
+```
+
+No introduce un hue (§13): es negro o blanco con alfa. Va en la dirección que cada modo ya usa para separar superficies (§2): en claro se hunde, en oscuro sube luminosidad.
+
+**Contraste verificado del texto sobre la píldora, en las seis combinaciones:**
+
+| Fase · modo | Superficie con velo | Texto | Contraste |
+|---|---|---|---|
+| Trabajo · claro | `#C4441F` + negro 14% ≈ `#A93B1B` | `#FFFFFF` | **6.3:1** |
+| Descanso · claro | `#0B6E93` + negro 14% ≈ `#095F7E` | `#FFFFFF` | **7.1:1** |
+| Preparación/pausa · claro | `#F1F3F7` + negro 14% ≈ `#CFD1D4` | `#12151C` | **12.1:1** |
+| Trabajo · oscuro | `#3A1408` + blanco 10% ≈ `#4E2B21` | `#FF8452` | **5.1:1** |
+| Descanso · oscuro | `#08222F` + blanco 10% ≈ `#213844` | `#58C8EE` | **6.4:1** |
+| Preparación/pausa · oscuro | `#1D2430` + blanco 10% ≈ `#343A45` | `#EDF0F5` | **9.6:1** |
+
+El piso es 5.1:1, por encima del 4.5:1 que pide texto normal (§3.6). Y **el velo mejora el contraste en las seis**, nunca lo degrada: ese es el criterio por el que se eligió el signo del alfa en cada modo.
+
+**Geometría de la píldora:**
+
+| Propiedad | Valor |
+|---|---|
+| Caja | `inline-flex`, `align-items: center`, gap **8px**, padding **0 12px** |
+| Alto | **32px** en compacto · **36px** en amplio |
+| Radio | `--r-full` (§5.3 la reserva para chips de estado) |
+| Relleno | `--phase-veil` |
+| Borde | 1px, `currentColor` al **35%** |
+| Texto | Inter **13 / 18, peso 600** en compacto · **14 / 20, peso 600** en amplio · color `currentColor` · `white-space: nowrap` |
+| Ícono | Trazo **20px**, `currentColor`, `flex-shrink: 0`, a la izquierda del texto |
+| Ancho máximo | `calc(100% - 32px)` |
+| Sombra | Ninguna, en ningún modo. Sobre una superficie de fase la sombra no se lee y ensucia el borde |
+
+### 12.4 Las tres variantes
+
+Misma píldora, tres contenidos. **Las tres se distinguen por ícono y palabra, nunca por color.**
+
+| Variante | Ícono (trazo, 20px) | Texto | Cuándo |
+|---|---|---|---|
+| **Sin conexión** | Antena / señal tachada | **"Sin conexión · se guarda al reconectar"** | Mientras la app no tiene red |
+| **Sincronizando** | Flecha circular, girando | **"Sincronizando"** | Al volver la red, **solo si hay algo pendiente en cola** |
+| **Guardado** | Check dentro de un círculo | **"Guardado"** | Cierre de una sincronización que efectivamente subió algo |
+
+**Regla dura nueva: sobre la superficie de fase no se pinta ningún color semántico ni el acento.** "Guardado" es un éxito y §3.1 dice que el éxito es verde — pero verde `--success` sobre coral o cian tiene contraste impredecible y, encima, `--success` claro (`#147A46`) sobre `#C4441F` es ilegible. La regla que resuelve el choque, y que queda establecida para toda la app: **los semánticos y el acento solo aparecen sobre superficies neutras montadas encima** (diálogos, hojas, toasts), **nunca sobre el color de fase**. Es la contracara exacta de §3.1: así como las fases no salen de Modo entrenar, los semánticos no entran a la superficie de fase.
+
+Esto no viola "ningún estado se comunica solo por color" (§14): acá **ningún estado se comunica por color en absoluto**. Los tres se leen por ícono y por palabra, en escala de grises y en lector de pantalla.
+
+### 12.5 Por qué ese texto
+
+**"Sin conexión · se guarda al reconectar"**
+
+- **"Sin conexión"** nombra la causa en el idioma del usuario, no del sistema. Nada de "modo offline", "desconectado del servidor" ni códigos (§13).
+- **"se guarda al reconectar"** es la mitad que importa: es la promesa que baja la alarma y es literalmente lo que pide `docs/screens.md` §5 ("indica que la sincronización queda pendiente"). Está en voz pasiva impersonal y en futuro implícito: la app se hace cargo, el usuario no tiene nada que hacer.
+- **No dice "el timer sigue andando".** Sería defensivo y redundante: el número está contando a 88px arriba de la píldora, y esa es una prueba más fuerte que cualquier frase. El texto tiene que cargar lo que el número no puede decir.
+- **No lleva signos de exclamación, ni ícono de alerta triangular, ni la palabra "error".** No hubo error.
+
+A 375px la cadena entra en una sola línea con margen: ~247px de texto + 20px de ícono + 8px de gap + 24px de padding ≈ 300px, contra 343px disponibles.
+
+### 12.6 Ciclo de vida y temporización
+
+| Momento | Comportamiento |
+|---|---|
+| **Se cae la red** | La píldora aparece con un **fade de opacidad de 200ms** (§9). **Nunca entra deslizándose ni escalando:** el slot ya está reservado, así que no hay nada que desplazar, y un movimiento en la visión periférica durante un intervalo de trabajo distrae |
+| **Mientras no hay red** | Permanece, sin parpadear, sin pulsar y sin animarse. Sigue visible detrás del backdrop del diálogo de salida (§7.3), igual que el número |
+| **Vuelve la red, sin nada en cola** | La píldora se va con un fade de 200ms. **No se muestra "Guardado":** no se guardó nada, y confirmar un guardado inexistente es mentir |
+| **Vuelve la red, con algo en cola** | Pasa a **"Sincronizando"** (mínimo **1s** en pantalla aunque el envío tarde 80ms) → **"Guardado"** durante **3s** → fade de salida de 200ms |
+| **Anti-parpadeo** | Una vez visible, la píldora se queda **como mínimo 2s**, y solo se retira tras **2s de red estable**. Con señal intermitente en un gimnasio, un elemento que aparece y desaparece cada 400ms arriba de la pantalla es peor que la información que transmite |
+| **Cambio de variante** | El contenido hace **cross-fade de 200ms**; el **ancho de la píldora salta, no se anima**. Una caja que se estira sola en la visión periférica llama más la atención que el propio mensaje — misma lógica por la que el timer no anima (§4.2) |
+| **`prefers-reduced-motion: reduce`** | La flecha de "Sincronizando" **no gira**: en su lugar el ícono pulsa opacidad 100% ↔ 45% cada 1s. Nada rota, se desplaza ni escala (§9) |
+
+**La franja solo habla de conectividad, no de resultados del backend.** Si hay red y la sincronización igual falla, **no se pinta un error acá**: el usuario está entrenando, no puede hacer nada al respecto, y no es su problema en ese momento. El pendiente sigue en cola y se resuelve fuera de esta pantalla. *(La superficie donde se muestra un pendiente que no pudo subir es un **agregado no solicitado — confirmar**: excede el brief y toca una pantalla que no es esta.)*
+
+### 12.7 En el estado "Listo para empezar"
+
+La sub-pantalla previa al inicio (`docs/screens.md` §5, estado "Listo para empezar") **no tiene color de fase**: es una superficie neutra. Ahí la misma píldora usa la **variante neutra**, y va **12px debajo del título**, alineada a la izquierda como el resto de esa columna (no centrada: es una página en flujo normal, no la pantalla del timer).
+
+| Propiedad | Valor |
+|---|---|
+| Relleno | `--surface-2` (los dos modos) |
+| Borde | 1px `--border` |
+| Texto e ícono | `--text-muted` (claro 5.9:1 sobre `--surface-2`; oscuro 8.1:1) |
+
+Todo lo demás —geometría, textos, íconos, ciclo de vida— es idéntico. Saber que no hay red **antes** de tocar "Iniciar" vale más que saberlo después.
+
+### 12.8 Prohibido acá
+
+1. Usar el toast para esta condición, o cualquier otra condición persistente.
+2. Carmesí, ámbar, verde o violeta dentro de la franja o de la píldora, en cualquier variante.
+3. Ícono de alerta triangular, exclamaciones, o la palabra "error" / "falló" para una caída de red.
+4. Una X de descarte, un "Reintentar" o cualquier otro target dentro de la franja.
+5. Animar el ancho de la píldora, hacerla parpadear, pulsar o entrar deslizándose.
+6. Atenuar, achicar, tapar o desplazar el número del timer por culpa del indicador.
+7. Colapsar la franja cuando está vacía.
+
+### 12.9 Contención responsive
+
+**La franja no cambia de disposición**: mismo lugar, mismo contenido, mismo texto en compacto y en amplio. Lo único que cambia es la escala (32→36px de alto de píldora, 13→14px de texto, 40→48px de franja), y se cambia con el prefijo `wide:`, el único umbral permitido (§8.1).
+
+| Invariante (§8.4) | Cómo se cumple acá |
+|---|---|
+| **1 · Sin scroll horizontal del `body`** | La píldora tiene `max-width: calc(100% - 32px)` y su texto es una cadena fija verificada a 375px (~300px de 343 disponibles). No hay ancho fijo, no hay contenido variable del usuario adentro |
+| **2 · Modales completos y scrolleables** | No aplica: el indicador no abre ninguna superficie. El diálogo de salida (§7.3) no se modifica y la píldora queda detrás de su backdrop |
+| **3 · Ninguna acción inalcanzable** | **No aplica por construcción:** la franja no contiene ninguna acción. Y la píldora no puede tapar los controles porque vive en el flujo, arriba del `flex-1` del timer, nunca en posición absoluta |
+| **4 · Las superficies anchas scrollean en sí mismas** | No aplica: la píldora no scrollea ni recorta. Si un texto futuro no entrara a 375px, **se acorta el texto**; no se agrega scroll ni elipsis |
+
+Presupuesto vertical a 375×667, el caso más apretado: safe-area + 16 + header 44 + 8 + franja 40 + controles (72 + 12 + 48) + 24 = ~264px, quedan ~400px para el bloque del timer, que necesita ~200px. Entra cómodo.
+
+### 12.10 Accesibilidad
+
+- La franja es una región `role="status"` con `aria-live="polite"`, y **vive fuera de la región `aria-live` del timer**. Si estuviera adentro, cada transición de fase volvería a anunciar "Sin conexión".
+- El texto es **texto real**, no un `aria-label` que duplique o contradiga lo visible. El ícono va `aria-hidden`.
+- **Ningún estado depende del color** — las tres variantes se distinguen por ícono y por palabra (§12.4).
+- **No hay mínimo de target porque no hay target:** nada en la franja es tocable ni focalizable, así que no entra en el orden de tabulación ni compite con el botón de volver.
+- Tamaño de texto: 13px en compacto, por encima del piso de 12px (§4.4).
+- Contrastes verificados en §12.3 (piso 5.1:1) y §12.7.
+
+### 12.11 Checklist de aceptación visual
+
+1. **Aparición:** al cortar la red, la píldora aparece arriba, centrada, debajo del header, **y el número del timer no se mueve ni un píxel**.
+2. **Espacio reservado:** con conexión, la franja está vacía pero el número está a la misma altura exacta que cuando la píldora está visible.
+3. **Las tres fases:** con la píldora visible, avanzar de preparación → trabajo → descanso: en las tres el texto de la píldora se lee cómodo y la píldora se distingue del fondo. Repetir en modo claro y en modo oscuro (6 combinaciones).
+4. **Herencia de color:** el texto de la píldora es siempre del mismo color que la etiqueta de fase y que el número. Nunca hay un color propio.
+5. **Neutralidad semántica:** ninguna variante muestra verde, carmesí, ámbar ni violeta, en ningún modo.
+6. **Texto exacto:** dice `Sin conexión · se guarda al reconectar`, en una sola línea, sin cortarse a 375px.
+7. **Nada tapado:** la píldora no se superpone al número, ni al nombre del bloque del header, ni a los botones de abajo, en 375px y en 1440px.
+8. **Sin acción:** la píldora no responde al toque, no tiene X y no recibe foco con Tab.
+9. **Reconexión sin cola:** al volver la red sin nada pendiente, la píldora se va con un fade y **no** aparece "Guardado".
+10. **Reconexión con cola:** al volver la red con algo pendiente, se ve "Sincronizando" al menos un segundo, después "Guardado" unos tres segundos, y después nada.
+11. **Anti-parpadeo:** cortando y restaurando la red rápido varias veces, la píldora no estrobea.
+12. **Movimiento:** con `prefers-reduced-motion: reduce`, la flecha de "Sincronizando" no gira y nada se desplaza.
+13. **Diálogo de salida:** con la píldora visible, tocar volver muestra el diálogo y la píldora sigue visible detrás del backdrop.
+14. **Antes de empezar:** sin red, la pantalla "Listo para empezar" muestra la misma píldora en variante neutra (`--surface-2` + borde + texto gris), debajo del título y alineada a la izquierda.
+
+---
+
+## 13. Voz de la interfaz
 
 - **Español rioplatense, voseo, segunda persona.** "Empezá", "Guardá", "Agregá un bloque".
 - Botones con el **verbo real** de la acción, nunca "Aceptar"/"OK" en decisiones con consecuencia.
@@ -622,7 +801,7 @@ A 375px, el chip más largo de la semilla (`kettlebell o mancuernas`) mide unos 
 
 ---
 
-## 13. Prohibiciones (resumen ejecutable)
+## 14. Prohibiciones (resumen ejecutable)
 
 1. Numerales del timer en tipografía que no sea mono + tabular.
 2. Verde, rojo o ámbar usados para algo que no sea éxito, destructivo/error o advertencia.
@@ -637,6 +816,9 @@ A 375px, el chip más largo de la semilla (`kettlebell o mancuernas`) mide unos 
 11. Superficies, textos o íconos que impliquen otros usuarios.
 12. Specs que declaren un solo modo de color, o que no declaren su comportamiento en compacto.
 13. Chips de equipo teñidos con el acento o con un semántico, "Sin equipo" dibujado como chip, o la relación Y/O expresada con un glifo (`+`, `&`, `/`) en lugar de la palabra.
+14. Colores semánticos o acento pintados **sobre la superficie de fase** de Modo entrenar. Los semánticos solo aparecen sobre superficies neutras montadas encima (diálogos, hojas, toasts).
+15. Un toast usado para comunicar una **condición persistente** (sin conexión, sincronización pendiente). El toast es para eventos efímeros.
+16. Un elemento que aparece o desaparece **desplazando el número del timer**. Todo indicador de Modo entrenar vive en un slot de alto reservado.
 
 ---
 
@@ -661,3 +843,10 @@ A 375px, el chip más largo de la semilla (`kettlebell o mancuernas`) mide unos 
 | 2026-08-26 | En el editor no hay botón "quitar grupo": el grupo muere con su último elemento, y "Agregar equipo" abre el selector de una (§11.6, §11.7) | Un solo control de quita evita dos caminos para el mismo resultado, y crear el grupo con su primer elemento hace que RN-014 se cumpla por construcción: el formulario nunca queda inválido por el equipo |
 | 2026-08-26 | La línea de equipo envuelve y nunca scrollea en horizontal (§11.9) | Un requisito escondido fuera del borde derecho es una pérdida funcional: el usuario cree que sabe qué necesita y le falta el banco |
 | 2026-08-26 | Chip neutro = dato; acento = control activo. El filtro por elemento no usa chips (§11.8, a confirmar) | Sin esa separación, los chips de filtro y los de equipo serían indistinguibles en la misma pantalla |
+| 2026-08-26 | El estado "Sin conexión" de Modo entrenar es una **píldora de estado en una franja reservada**, no un toast ni un banner (§12.1, §12.2) | Es una condición persistente, no un evento; el visor de toasts se ancla al borde inferior, justo encima del par pausar/avanzar de ≥72px, y un banner sobredimensiona una noticia que es tranquilizadora |
+| 2026-08-26 | La franja de estado reserva su alto siempre, esté vacía o no (§12.2) | El área del timer está centrada: si la franja apareciera de golpe, el número de 88px se correría justo mientras el usuario lo mira. §4.2 exige que el número no se mueva nunca |
+| 2026-08-26 | La píldora hereda `currentColor` de la fase y se rellena con `--phase-veil` (negro 14% en claro, blanco 10% en oscuro) (§12.3) | Ningún color fijo sobrevive a las seis superficies de fase (el `fg` se invierte entre trabajo/descanso y preparación en claro); el velo empuja el fondo en dirección contraria al texto, así que **sube** el contraste en las seis (piso 5.1:1) |
+| 2026-08-26 | **Sobre la superficie de fase no se pinta ningún semántico ni el acento** (§12.4, prohibición 14) | Contracara exacta de §3.1: así como las fases no salen de Modo entrenar, los semánticos no entran a la superficie de fase. Verde sobre coral es ilegible, y el estado se comunica igual por ícono y palabra |
+| 2026-08-26 | Texto fijo: "Sin conexión · se guarda al reconectar"; sin "el timer sigue andando" (§12.5) | La segunda mitad es la promesa que baja la alarma y es lo que pide `screens.md` §5; que el timer anda ya lo prueba el número contando a 88px arriba de la píldora |
+| 2026-08-26 | Sí hay estado transitorio "Sincronizando" → "Guardado" (3s), pero **solo si había algo en cola** (§12.6) | Una desaparición muda deja la duda "¿se guardó o perdí el indicador?"; confirmar un guardado que no ocurrió sería mentir |
+| 2026-08-26 | Piso de 2s en pantalla y 2s de red estable antes de retirar la píldora (§12.6) | Con señal intermitente, un elemento que estrobea arriba de la pantalla molesta más de lo que informa |

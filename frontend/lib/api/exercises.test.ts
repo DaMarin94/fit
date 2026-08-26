@@ -31,6 +31,14 @@ describe("lib/api/exercises", () => {
     expect(spy).toHaveBeenCalledWith("/exercises?equipmentId=none");
   });
 
+  it("listExercises con options.silent reenvía silent: true a apiFetch", async () => {
+    const spy = vi.spyOn(apiClient, "apiFetch").mockResolvedValue([]);
+
+    await listExercises(undefined, { silent: true });
+
+    expect(spy).toHaveBeenCalledWith("/exercises", { silent: true });
+  });
+
   it("createExercise pega a POST /exercises con el nombre y los grupos de equipo", async () => {
     const spy = vi.spyOn(apiClient, "apiFetch").mockResolvedValue({
       id: "1",

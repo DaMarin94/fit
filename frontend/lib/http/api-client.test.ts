@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError, apiFetch } from "./api-client";
+import { ApiError, apiFetch, isNetworkError } from "./api-client";
 import { clearToasts, subscribeToasts } from "../toast/toast-store";
 
 function jsonResponse(body: unknown, init?: { status?: number }) {
@@ -102,5 +102,37 @@ describe("apiFetch", () => {
     await apiFetch("/x");
 
     expect(toasts).toHaveLength(0);
+  });
+
+  it("con silent: true, un error de red no dispara toast pero sigue tirando ApiError", async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+    await expect(apiFetch("/x", { silent: true })).rejects.toMatchObject({ code: "NETWORK_ERROR" });
+    expect(toasts).toHaveLength(0);
+  });
+
+  it("con silent: true, un error del servidor no dispara toast pero sigue tirando ApiError", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ error: { message: "Error.", code: "X" } }, { status: 400 }),
+    );
+
+    await expect(apiFetch("/x", { silent: true })).rejects.toMatchObject({ code: "X" });
+    expect(toasts).toHaveLength(0);
+  });
+});
+
+describe("isNetworkError", () => {
+  it("es true para un ApiError con code NETWORK_ERROR", () => {
+    expect(isNetworkError(new ApiError("x", "NETWORK_ERROR"))).toBe(true);
+  });
+
+  it("es false para un ApiError con otro code", () => {
+    expect(isNetworkError(new ApiError("x", "NAME_TAKEN"))).toBe(false);
+  });
+
+  it("es false para un error que no es ApiError", () => {
+    expect(isNetworkError(new Error("x"))).toBe(false);
+    expect(isNetworkError("x")).toBe(false);
+    expect(isNetworkError(null)).toBe(false);
   });
 });

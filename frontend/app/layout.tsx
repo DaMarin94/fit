@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeScript } from "@/components/theme/ThemeScript";
 import { NavBar } from "@/components/nav/NavBar";
 import { ToastProvider } from "@/components/toast/ToastProvider";
+import { OfflineSyncListener } from "@/components/offline/OfflineSyncListener";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {children}
         </main>
         <ToastProvider />
+        <OfflineSyncListener />
       </body>
     </html>
   );
