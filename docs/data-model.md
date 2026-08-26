@@ -83,7 +83,7 @@ Cada tipo tiene su propia forma de `timerConfig`. La relación tipo → timer es
 | `fuerza` | EMOM | Duración total y duración del intervalo por tarea |
 | `metcon` | AMRAP | Duración total |
 | `intervalos` | Work/rest | Tiempo de trabajo, tiempo de descanso, cantidad de rondas |
-| `cardio_libre` | Libre / cronómetro | Lista ordenada de fases con su duración, sin repeticiones |
+| `cardio_libre` | Libre / cronómetro | Sin campos propios (`timerConfig` vacío) — las fases son la lista ordenada de ejercicios del bloque, cada una con su `duration` (§2.6) |
 
 Todos los tiempos y cantidades son positivos (RN-006).
 

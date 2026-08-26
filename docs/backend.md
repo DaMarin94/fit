@@ -31,33 +31,182 @@ Entidades materializadas: `Exercise`, `Block` + `BlockExercise`, `Routine`, `Day
 
 ## Endpoints
 
-Rutas, bodies, respuestas y códigos de error. El envoltorio común está en `docs/data-model.md` §4.
+Rutas, bodies, respuestas y códigos de error. El envoltorio (`{ data }` en éxito, `{ error: { message, code } }` en error), el formato de fechas y la exclusión de borrados en los listados están en `docs/data-model.md` §4 y valen para todo lo de acá. Los shapes de las entidades son los de `data-model.md` §2; abajo se anota solo lo que cada endpoint agrega o recorta.
 
-El envoltorio ya está implementado y verificado en código, en las dos formas: `{ data }` en éxito y `{ error: { message, code } }` en error. **No hay todavía endpoints de dominio.**
+`VALIDATION_ERROR` (400) es transversal: lo produce el `ValidationPipe` global ante cualquier body que no cumpla el DTO.
+
+### Exercises
+
+`Exercise` en la respuesta es `{ id, name, deletedAt }`.
+
+| Verbo y ruta | Body | Respuesta | Errores |
+|---|---|---|---|
+| `GET /exercises` | — | `{ data: Exercise[] }` | — |
+| `POST /exercises` | `{ name }` | `{ data: Exercise }` (201) | `NAME_TAKEN` |
+| `PATCH /exercises/:id` | `{ name }` | `{ data: Exercise }` | `EXERCISE_NOT_FOUND`, `NAME_TAKEN` |
+| `DELETE /exercises/:id` | — | `{ data: Exercise }` con `deletedAt` seteado | `EXERCISE_NOT_FOUND`, `EXERCISE_IN_USE` |
+
+| Código | Status | Cuándo |
+|---|---|---|
+| `NAME_TAKEN` | 409 | Ya hay un ejercicio no borrado con ese nombre (RN-005) |
+| `EXERCISE_NOT_FOUND` | 404 | No existe o está borrado |
+| `EXERCISE_IN_USE` | 409 | Algún `BlockExercise` o `DayBlockExercise` lo referencia (RN-007) |
+
+### Blocks
+
+| Verbo y ruta | Body | Respuesta | Errores |
+|---|---|---|---|
+| `GET /blocks` | — | `{ data: Block[] }`, cada bloque con sus `exercises` ordenados | — |
+| `POST /blocks` | Bloque completo (abajo) | `{ data: Block }` (201) | `NAME_TAKEN` |
+| `PATCH /blocks/:id` | Bloque completo (abajo) | `{ data: Block }` | `BLOCK_NOT_FOUND`, `NAME_TAKEN` |
+| `DELETE /blocks/:id` | — | `{ data: Block }` con `deletedAt` seteado | `BLOCK_NOT_FOUND` |
+
+Body de creación y edición:
+
+```json
+{
+  "name": "...",
+  "type": "fuerza | metcon | intervalos | cardio_libre",
+  "advanceMode": "automatico | manual",
+  "timerConfig": { },
+  "exercises": [{ "exerciseId": "...", "reps": 12, "duration": 60 }]
+}
+```
+
+`PATCH /blocks/:id` es **reemplazo completo** del bloque y de su lista de ejercicios, no un patch parcial.
+
+`DELETE /blocks/:id` **no se bloquea nunca**: las rutinas que usan ese bloque tienen su propia copia (RN-002), así que no hay referencia viva que proteger.
+
+`timerConfig` según `type` (`data-model.md` §2.5):
+
+| `type` | `timerConfig` |
+|---|---|
+| `fuerza` | `{ totalDurationSeconds, taskIntervalSeconds }` |
+| `metcon` | `{ totalDurationSeconds }` |
+| `intervalos` | `{ workSeconds, restSeconds, rounds }` |
+| `cardio_libre` | `{}` — las fases las define la lista de `exercises` con su `duration` |
+
+| Código | Status | Cuándo |
+|---|---|---|
+| `NAME_TAKEN` | 409 | Ya hay un bloque no borrado con ese nombre (RN-005) |
+| `BLOCK_NOT_FOUND` | 404 | No existe o está borrado |
+
+**Nota de implementación** (no está en los docs cerrados): en bloques de tipo `intervalos` los `exercises` no llevan `reps` ni `duration` propios — el tiempo de cada uno sale del `workSeconds` uniforme del `timerConfig`.
+
+### Routines
+
+| Verbo y ruta | Body | Respuesta | Errores |
+|---|---|---|---|
+| `GET /routines` | — | `{ data: [{ id, name, dayCount }] }` | — |
+| `GET /routines/:id` | — | `{ data: Routine }` con el árbol completo | `ROUTINE_NOT_FOUND` |
+| `POST /routines` | Rutina completa (abajo) | `{ data: Routine }` completo (201) | `NAME_TAKEN`, `EXERCISE_NOT_FOUND` |
+| `PUT /routines/:id` | Rutina completa (abajo) | `{ data: Routine }` completo | `ROUTINE_NOT_FOUND`, `NAME_TAKEN`, `EXERCISE_NOT_FOUND` |
+| `DELETE /routines/:id` | — | `{ data: Routine }` con `deletedAt` seteado | `ROUTINE_NOT_FOUND` |
+
+`GET /routines` es un listado liviano: solo `id`, `name` y la cantidad de días. El árbol se pide con `GET /routines/:id`, que devuelve `days` ordenados → bloques copiados ordenados → `exercises` ordenados. **Cada ejercicio del árbol trae `exerciseId` pero no el nombre**: el cliente lo resuelve cruzando contra `GET /exercises`.
+
+Body de creación y edición:
+
+```json
+{
+  "name": "...",
+  "days": [
+    {
+      "blocks": [
+        {
+          "name": "...",
+          "type": "...",
+          "advanceMode": "...",
+          "timerConfig": { },
+          "exercises": [{ "exerciseId": "...", "reps": 12, "duration": 60 }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`PUT /routines/:id` es **reemplazo completo del árbol**: días, bloques y ejercicios se borran y se recrean.
+
+**No hay endpoint para "agregar un bloque del pool a un día".** El frontend arma el árbol completo del lado cliente —copiando los datos del bloque del pool cuando corresponde— y lo manda entero al guardar. Guardado el árbol, el origen del bloque (pool o ad-hoc) es indistinguible, como especifica `docs/screens.md` §3.
+
+| Código | Status | Cuándo |
+|---|---|---|
+| `NAME_TAKEN` | 409 | Ya hay una rutina no borrada con ese nombre (RN-005) |
+| `ROUTINE_NOT_FOUND` | 404 | No existe o está borrada |
+| `EXERCISE_NOT_FOUND` | 404 | Algún `exerciseId` del árbol no existe o está borrado |
+
+### Workout logs
+
+| Verbo y ruta | Body | Respuesta | Errores |
+|---|---|---|---|
+| `POST /routines/:routineId/days/:dayId/workout-logs` | `{ performedAt? }` (ISO 8601; default: ahora) | `{ data: WorkoutLog }` (201) | `ROUTINE_NOT_FOUND`, `DAY_NOT_FOUND` |
+| `GET /workout-logs` | — | `{ data: WorkoutLog[] }` ordenado por `performedAt` descendente | — |
+
+`WorkoutLog` en la respuesta es `{ id, performedAt, snapshot }`. No hay edición ni borrado (RN-001).
+
+El `snapshot` lo arma el backend leyendo el estado actual del `Day` —que ya es la copia vigente (RN-002)—, y **sí incluye el nombre resuelto de cada ejercicio**, congelado:
+
+```json
+{
+  "routineName": "...",
+  "day": { "order": 0 },
+  "blocks": [
+    {
+      "name": "...",
+      "type": "...",
+      "timerConfig": { },
+      "advanceMode": "...",
+      "exercises": [{ "name": "...", "order": 0, "reps": 12, "duration": 60 }]
+    }
+  ]
+}
+```
+
+| Código | Status | Cuándo |
+|---|---|---|
+| `ROUTINE_NOT_FOUND` | 404 | La rutina no existe o está borrada |
+| `DAY_NOT_FOUND` | 404 | El día no existe o no pertenece a esa rutina |
+
+### Notas transversales de implementación
+
+No están en los docs cerrados; son decisiones que tomó el backend:
+
+- **El `order` nunca viaja en el body.** El de días, bloques y ejercicios se infiere de la posición en el array recibido.
+- **Editar es reemplazar.** Tanto `PATCH /blocks/:id` como `PUT /routines/:id` borran y recrean lo anidado dentro de una transacción, en vez de aplicar un patch parcial.
+- **La unicidad de nombre (RN-005) se valida en la aplicación** (find-then-write), no con un constraint de base, porque tiene que excluir los registros borrados lógicamente.
+- **Las respuestas incluyen campos internos de Prisma** que `data-model.md` no lista (`id` y FKs como `blockId` o `dayBlockId` en las filas anidadas). Son aditivos e inofensivos; el frontend los ignora.
 
 ## Módulos de dominio
 
 ### Ejercicios
 
-_Sin contenido todavía._
+`src/exercises`. CRUD del pool de ejercicios (RF-001). Aplica RN-005 al crear y renombrar, RN-008 en el borrado y RN-007 en el bloqueo del borrado: consulta `BlockExercise` y `DayBlockExercise` antes de borrar y corta con `EXERCISE_IN_USE` si hay alguna referencia.
+
+`equipmentGroups` (`data-model.md` §2.2) todavía no forma parte del recurso: entra con Equipment (`roadmap.md` §Fase 2).
 
 ### Bloques
 
-_Sin contenido todavía._
+`src/blocks`. CRUD del pool de bloques (RF-002, RF-003). Valida el `timerConfig` contra el `type` del bloque y los tiempos y repeticiones positivos (RN-006), más RN-005 y RN-008. No aplica bloqueo de borrado: los bloques del pool no tienen referencias vivas (RN-002).
 
 ### Rutinas
 
-_Sin contenido todavía._
+`src/routines`. CRUD de rutinas con su árbol completo de días y bloques copiados (RF-004, RF-005, RF-006). Materializa RN-002 y RN-003: los bloques que llegan en el body se persisten como `DayBlock` / `DayBlockExercise` propios de la rutina, sin vínculo con el pool, y el único vínculo vivo que queda es el `exerciseId` de cada ejercicio —que el módulo valida contra el pool (`EXERCISE_NOT_FOUND`) y que sostiene RN-007—. Aplica RN-005 sobre el nombre de la rutina y RN-008 en el borrado.
 
 ### Historial
 
-_Sin contenido todavía._
+`src/workout-logs`. Crea el registro de una ejecución terminada (RF-013) y lista el historial (RF-014). Construye el snapshot inmutable de RN-001 a partir del `Day` y resuelve ahí los nombres de los ejercicios, de modo que el registro no conserve ninguna referencia editable (`data-model.md` §2.9). No expone edición ni borrado. La agrupación por día y semana (RN-012) se deriva de `performedAt` en el frontend; el backend solo ordena descendente.
+
+El snapshot todavía no congela equipamiento (RN-015): entra con Equipment (`roadmap.md` §Fase 2).
 
 ## Semilla
 
 Qué debe existir está en `docs/requirements.md` §6; acá va cómo se carga.
 
-_Sin contenido todavía._
+- **Script:** `backend/prisma/seed.ts`. Se corre con `prisma db seed`, declarado en `prisma.config.ts` como `migrations.seed: "ts-node prisma/seed.ts"`.
+- **Idempotente:** si ya existe una rutina `Plan semanal` no borrada, no hace nada. Correrlo dos veces no duplica.
+- **Qué carga:** los 15 ejercicios, los 8 bloques del pool y la rutina `Plan semanal` de 5 días de `docs/requirements.md` §6.
+- **Sin equipamiento:** los ejercicios se crean sin `equipmentGroups`, que todavía no existe en el schema (`roadmap.md` §Fase 2).
 
 ## Testing
 

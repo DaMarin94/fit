@@ -8,9 +8,20 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { LoggingMiddleware } from './common/middleware/logging.middleware';
 import { PrismaModule } from './prisma/prisma.module';
+import { ExercisesModule } from './exercises/exercises.module';
+import { BlocksModule } from './blocks/blocks.module';
+import { RoutinesModule } from './routines/routines.module';
+import { WorkoutLogsModule } from './workout-logs/workout-logs.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    ExercisesModule,
+    BlocksModule,
+    RoutinesModule,
+    WorkoutLogsModule,
+  ],
   controllers: [AppController],
   providers: [
     AppService,

@@ -39,9 +39,9 @@ Dejar el monorepo listo para escribir features. Sin features. Lo construido est�
 
 ---
 
-## Fase 1 — Flujo core — **en curso, es la fase actual**
+## Fase 1 — Flujo core — **Hecha**
 
-Crear rutina → Modo entrenar → timer → terminar, sin equipamiento. Al cerrar esta fase el producto existe.
+Crear rutina → Modo entrenar → timer → terminar, sin equipamiento. Lo construido está documentado en `docs/backend.md` y `docs/frontend.md`.
 
 **Cubre:** RF-001 a RF-013 y RF-015. RN-001, RN-002, RN-003, RN-005 a RN-011.
 
@@ -63,13 +63,13 @@ Crear rutina → Modo entrenar → timer → terminar, sin equipamiento. Al cerr
 | Pool (`screens.md` §4) | **Mínimo:** listados y edición de bloques y ejercicios. Sin elementos, sin grupos de equipo y sin filtro |
 | Selector rápido (`screens.md` §6) | Para bloques y ejercicios |
 | Modo entrenar (`screens.md` §5) | **Completo:** los cuatro timers (RF-008), avisos de transición (RF-009), pausar / reanudar / avanzar (RF-010), avance automático o manual (RF-011, RN-009), confirmación de salida (RN-010) y terminar guardando historial (RF-012, RF-013) |
-| Historial (`screens.md` §7) | **Mínimo:** lista simple de entrenamientos con fecha y rutina. Sin agrupación por semana ni detalle completo (RF-014 queda parcial hasta la Fase 4) |
+| Historial (`screens.md` §7) | Lista de entrenamientos con fecha y rutina, y detalle del snapshot completo. Sin la agrupación por semana y día calendario de RN-012, que es de la Fase 4 |
 
 Además: toggle de tema claro/oscuro funcional en el header de Mis rutinas (RF-015, RN-011).
 
 ---
 
-## Fase 2 — Equipamiento
+## Fase 2 — Equipamiento — **es la fase actual**
 
 **Cubre:** RF-016, RF-017, RF-018, RN-013, RN-014, RN-015.
 
@@ -106,7 +106,7 @@ Además: toggle de tema claro/oscuro funcional en el header de Mis rutinas (RF-0
 
 **Cubre:** RF-014 en su forma final y el cierre de calidad de la v1.
 
-- Agrupación del historial por semana lunes-domingo y por día calendario (RN-012).
-- Detalle del snapshot completo de un entrenamiento, con su equipamiento congelado (RN-001, RN-015).
+- Agrupación del historial por semana lunes-domingo y por día calendario (RN-012). Es lo único que le falta a RF-014: el detalle del snapshot completo ya existe.
+- El detalle muestra lo que el snapshot contenga (RN-001): su equipamiento congelado (RN-015) aparece ahí en cuanto lo escribe la Fase 2.
 - **Repaso de QA visual** sobre todo lo entregado en las fases anteriores, con el prompt y la plantilla de `docs/qa-visual.md` (paso 5.5 del flujo del orquestador).
 - Verificación de la definición de "v1 terminada" (`requirements.md` §2.3).

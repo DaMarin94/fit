@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { TABS } from "./tabs";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { requestGuardedNavigation } from "@/lib/training/exit-guard-store";
 
 /**
  * Navegación global (`docs/screens.md` §1). Mismos tres destinos, mismo
@@ -10,10 +12,20 @@ import { TABS } from "./tabs";
  * orientación (`docs/design.md` §7, §8.3): tabs inferiores en compacto
  * (< --bp-wide), barra superior en amplio (>= --bp-wide). No resta ancho
  * al contenido en ninguna disposición: las dos son `fixed` y horizontales.
+ *
+ * Tocar un tab con el timer de Modo entrenar corriendo dispara la
+ * confirmación de RN-010 (`docs/design.md` §7.3): acá se consulta la
+ * guardia de `lib/training/exit-guard-store.ts` antes de dejar navegar.
  */
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function handleTabClick(event: React.MouseEvent, href: string) {
+  if (requestGuardedNavigation(href)) {
+    event.preventDefault();
+  }
 }
 
 export function NavBar() {
@@ -37,6 +49,7 @@ export function NavBar() {
             <Link
               key={tab.href}
               href={tab.href}
+              onClick={(e) => handleTabClick(e, tab.href)}
               aria-current={active ? "page" : undefined}
               className="flex flex-1 flex-col items-center justify-center gap-1"
               style={{ color: active ? "var(--accent)" : "var(--text-muted)" }}
@@ -64,6 +77,7 @@ export function NavBar() {
                 <Link
                   key={tab.href}
                   href={tab.href}
+                  onClick={(e) => handleTabClick(e, tab.href)}
                   aria-current={active ? "page" : undefined}
                   className="relative py-2 text-sm font-semibold"
                   style={{ color: active ? "var(--accent)" : "var(--text-muted)" }}
@@ -79,6 +93,9 @@ export function NavBar() {
                 </Link>
               );
             })}
+          </div>
+          <div className="ml-auto">
+            <ThemeToggle />
           </div>
         </div>
       </nav>
