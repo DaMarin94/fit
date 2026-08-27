@@ -25,6 +25,14 @@ Estado de implementación. Una línea por feature. El detalle funcional vive en 
 | Confirmación al salir con el timer corriendo | RN-010 | Implementada |
 | Funcionamiento offline y sincronización | RN-004 | Implementada |
 | Registro de historial al terminar (incluye el equipamiento congelado) | RF-012, RF-013, RN-015 | Implementada |
-| Consulta de historial agrupada por semana y día | RF-014 | Parcial — lista y detalle del snapshot completo andan; falta la agrupación por semana y día calendario (RN-012) |
+| Consulta de historial agrupada por semana y día | RF-014, RN-012 | Implementada |
 | Toggle de tema claro/oscuro con persistencia | RF-015, RN-011 | Implementada |
 | Semilla con el plan de ejemplo | `requirements.md` §6 | Implementada |
+
+---
+
+## Hallazgos abiertos
+
+Desviaciones entre lo documentado y lo implementado, **sin decisión tomada**. Cada una se cierra eligiendo un lado: corregir el código para que cumpla la spec, o actualizar la spec para reflejar lo implementado. No se resuelven acá.
+
+Ninguno.

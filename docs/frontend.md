@@ -36,6 +36,7 @@ Las tres tabs de `screens.md` §1 son las rutas raíz: `/` (Mis rutinas), `/pool
 | `QuickSelector` | El selector rápido único de `screens.md` §6, usado para bloques, ejercicios y elementos. Elige elementos al armar un grupo de equipo en `ExerciseForm` y resuelve el filtro de ejercicios por elemento en Pool — ahí el listado va precedido por dos ítems sintéticos, "Todos los equipos" y "Sin equipo", que no son elementos reales del pool. Se muestra como hoja inferior en compacto y como diálogo centrado en amplio |
 | `TrainingScreen` | Modo entrenar completo (`screens.md` §5): consume `use-session` y pinta fase, tiempo, ejercicio actual y los controles de RF-010 / RF-011. También la franja de estado de conectividad de `design.md` §12, con `role="status"` propio, **separado** de la región `aria-live` del timer (si compartieran región, cada cambio de fase reanunciaría "Sin conexión") |
 | `OfflineSyncListener` | No renderiza nada. Montado en el layout raíz, es el único punto que dispara la sincronización de la cola de entrenamientos pendientes (ver §Offline) |
+| `HistorialSkeleton` | Esqueleto de carga del Historial. Toma la forma de la estructura de tres niveles —encabezado de semana, encabezado de día y tarjetas— en vez de tarjetas planas (`design.md` §13.9) |
 | `ConfirmDialog` | Diálogo de confirmación genérico. Lo usan la confirmación de salida de Modo entrenar (RN-010) y el resto de las confirmaciones destructivas de `screens.md` §8 |
 | `lib/training/exit-guard-store.ts` | Store que marca si hay una sesión de entrenamiento en curso. `NavBar` lo consulta antes de navegar para interceptar la salida (RN-010); el propio store intercepta además `popstate` y `beforeunload` |
 
@@ -109,13 +110,22 @@ Decisiones que ni `requirements.md` ni `screens.md` fijan; son cómo las resolvi
 - **Intervalos:** la lista de ejercicios se cicla completa una vez por ronda (round-robin). Es la lectura que calza exacto con el bloque de la semilla ("2 rondas de 4 ejercicios").
 - **No hay cuenta regresiva de preparación** antes de arrancar: ningún RF ni pantalla la pide.
 
+## Historial
+
+Agrupación y formato de texto de la pantalla de Historial (`screens.md` §7). La regla funcional es RN-012 y el spec visual de los tres niveles —semana, día, entrada— es `design.md` §13. Vive en `lib/historial/`, **sin dependencias de React**: son funciones puras que `app/historial/page.tsx` consume al pintar.
+
+| Archivo | Rol |
+|---|---|
+| `group-workout-logs.ts` | `groupWorkoutLogsByWeek()` arma la estructura semana → día → entradas. **Agrupa, no ordena:** respeta el orden de entrada, que ya viene del backend por `performedAt` descendente. Las claves de día y de semana se calculan sobre la **hora local** del dispositivo, nunca sobre UTC (RN-012). Exporta también `startOfLocalWeekMonday()`, que reusa el formateo para decidir si una semana es la actual |
+| `format-historial-heading.ts` | Los tres formatos de texto: encabezado de semana (`formatWeekHeading`, relativo solo si la semana está en curso), encabezado de día (`formatDayHeading`) y hora de la entrada (`formatEntryTime`) |
+
 ## Testing
 
 Vitest + React Testing Library, TDD estricto (`docs/technical.md` §Testing). Acá van las convenciones propias del frontend: helpers, mocks y qué se testea a qué nivel.
 
-Cubiertos con tests escritos antes que la implementación: el tema y su boot script, el store de toasts, el cliente HTTP y los wrappers de `lib/api` (con `fetch` mockeado), los esquemas Zod, el `NavBar` en sus dos disposiciones, las pantallas, el motor del timer y la capa offline.
+Cubiertos con tests escritos antes que la implementación: el tema y su boot script, el store de toasts, el cliente HTTP y los wrappers de `lib/api` (con `fetch` mockeado), los esquemas Zod, el `NavBar` en sus dos disposiciones, las pantallas, el motor del timer, la capa offline y la agrupación y el formato del historial.
 
-El grueso del esfuerzo está en el **motor del timer probado sin UI**: `session-plan` y `session-engine` no dependen de React, así que se ejercitan con tics de tiempo inyectados en vez de renderizar y esperar. La capa offline se prueba con **`fake-indexeddb`** como dev dependency, porque jsdom no trae IndexedDB. La suite completa son 254 tests en 51 archivos.
+El grueso del esfuerzo está en el **motor del timer probado sin UI**: `session-plan` y `session-engine` no dependen de React, así que se ejercitan con tics de tiempo inyectados en vez de renderizar y esperar. La capa offline se prueba con **`fake-indexeddb`** como dev dependency, porque jsdom no trae IndexedDB. Los helpers de `lib/historial/` siguen el mismo criterio que el timer: se ejercitan con fechas fijas, sin renderizar. La suite completa son 277 tests en 54 archivos.
 
 ## Gotchas
 
@@ -127,4 +137,5 @@ El grueso del esfuerzo está en el **motor del timer probado sin UI**: `session-
 - **La línea de equipo de solo lectura está duplicada a propósito.** Pool y el detalle de Historial la pintan con dos componentes locales distintos —`EquipmentLine` en `app/pool/page.tsx`, que resuelve `equipmentId` → nombre contra un mapa armado con el pool de elementos, y `SnapshotEquipmentLine` en `app/historial/page.tsx`, que ya recibe los nombres congelados por valor (RN-015)—. Las dos siguen el mismo spec visual (`docs/design.md` §11.2-§11.5: contención para el "O", cajas separadas con la palabra "Y" en mayúscula para el "Y", sin color). No hay un componente compartido porque no existía un patrón previo de componente común a esas dos pantallas.
 - **`silent` no es "no reportar errores": es "acá el error no es una falla".** Se pasa solo en los caminos donde la app se degrada con gracia y el usuario no pierde nada —el fetch del día a entrenar que puede caer en la cache, el `POST` de terminar que puede caer en la cola—. El `ApiError` se sigue lanzando: si la degradación tampoco resuelve (no hay nada cacheado, el error no era de red), el llamador dispara el toast a mano. Sin `silent` la pantalla apila toasts rojos de "no se pudo conectar" arriba de un flujo que en los hechos funcionó.
 - **El sync de la cola tiene un solo disparador: `OfflineSyncListener`.** No agregar un segundo lugar que llame `runWorkoutLogSync` —una pantalla que quiera "sincronizar al montar", por ejemplo—: dos disparadores compiten por la misma cola y duplican entrenamientos. Lo que se necesita es leer el estado, y eso se hace suscribiéndose a `lib/offline/workout-log-sync-status.ts`.
+- **La hora de una entrada del historial se formatea a mano, sin `Intl`.** Con `hour12: false` algunas implementaciones de ICU devuelven `24:00` para la medianoche, y el encabezado del día ya la ubica en el día correcto: la entrada tiene que decir `00:00`. El resto de los encabezados sí usa `Intl.DateTimeFormat` con locale `es-AR`, porque necesita nombres de mes y de día de semana.
 - **Un grupo de equipo vacío no es un estado alcanzable en el editor.** En `ExerciseForm`, "Agregar equipo" abre el selector rápido de una y el grupo nace con su primer elemento; quitar el último elemento hace desaparecer el grupo, y no hay botón "quitar grupo" propio. RN-014 se cumple por construcción: el guardado nunca se bloquea por el equipo.

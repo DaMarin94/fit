@@ -20,7 +20,12 @@ El Editor de rutina y Modo entrenar **no son tabs**: se llega a ellos desde Mis 
 
 La barra permanece visible también durante Modo entrenar. Tocar un tab con el timer corriendo dispara la confirmación de RN-010.
 
-El **toggle de tema claro/oscuro** (RF-015, RN-011) no es un destino ni un tab: es un control que vive en el **header de "Mis rutinas"**, en la misma esquina en disposición compacta y en amplia (`docs/design.md` §2.2). No está disponible desde el resto de las pantallas: para cambiar el tema se vuelve al home.
+El **toggle de tema claro/oscuro** (RF-015, RN-011) no es un destino ni un tab: es un control cuya disponibilidad depende de la disposición (ubicación exacta en `docs/design.md` §2.2).
+
+| Disposición | Desde dónde se cambia el tema |
+|---|---|
+| Amplia | Desde cualquier pantalla: el toggle acompaña a la barra de navegación superior, presente en toda la app |
+| Compacta | Solo desde el header de **Mis rutinas** (home); desde el resto de las pantallas se vuelve al home para cambiarlo |
 
 ---
 
@@ -178,7 +183,7 @@ El comportamiento del timer depende del tipo del bloque (RF-008): EMOM, AMRAP, i
 
 **Propósito:** ver los entrenamientos realizados.
 
-**Contenido:** lista de registros de historial, **agrupada por semana (lunes a domingo) y dentro de cada semana por día calendario** (RN-012). Cada entrada muestra la fecha y la rutina, y permite abrir el snapshot completo de lo que se hizo.
+**Contenido:** lista de registros de historial, **agrupada por semana (lunes a domingo) y dentro de cada semana por día calendario** (RN-012). La fecha la enuncia el encabezado de cada día; cada entrada muestra la rutina y la **hora**, y permite abrir el snapshot completo de lo que se hizo.
 
 Lo que se muestra es el **snapshot congelado** (RN-001): refleja la rutina tal como era al momento de entrenarla, aunque después se haya editado o borrado.
 

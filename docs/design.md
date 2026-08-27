@@ -377,7 +377,8 @@ Se cumplen **siempre**, en todo ancho ≥375px, en los dos modos de color:
 |---|---|---|
 | Navegación | Tabs inferiores fijas | Barra superior fija |
 | Ancho de contenido | 100% – 16px de padding lateral | `max-width: 960px`, centrado, 24px de padding |
-| Listas (rutinas, historial) | 1 columna | 2 columnas |
+| Listas (rutinas) | 1 columna | 2 columnas |
+| Historial | 1 columna | **1 columna** — excepción: la agrupación por semana y día tiene un solo eje, el tiempo (§13.10) |
 | Acción rápida (pool) | Hoja inferior | Diálogo centrado 560px |
 | Timer principal | `timer-hero` 88px | `timer-hero` 140px, a todo el ancho |
 | Acción primaria de pantalla | Botón ancho al pie / flotante | Botón alineado al header |
@@ -589,7 +590,7 @@ A 375px, el chip más largo de la semilla (`kettlebell o mancuernas`) mide unos 
 
 - **Los conectores son texto real**, así que el lector de pantalla lee "kettlebell o mancuernas Y banco" sin ayuda extra. No se usan `aria-label` que dupliquen o contradigan lo visible.
 - La línea de equipo del listado arranca con una etiqueta **visualmente oculta** "Equipo: ", para dar contexto a quien no ve la maquetación.
-- **Ningún estado depende del color** (§14): la estructura Y/O es forma + palabra; el filtro activo es acento **más** el nombre del elemento **más** la X.
+- **Ningún estado depende del color** (§15): la estructura Y/O es forma + palabra; el filtro activo es acento **más** el nombre del elemento **más** la X.
 - Contrastes verificados en los dos modos: texto de chip `--text` sobre `--surface-2` (claro 15.8:1, oscuro 13.9:1); conectores `--text-muted` sobre `--bg`/`--surface` (≥ 5.5:1 en los dos modos); ícono X en `--danger` sobre `--danger-tint` (≥ 4.5:1).
 - Targets: X de quitar **44×44**; filas de elemento **≥44px** de alto; botones de agregar 44px y 48px; separación mínima de 8px entre targets adyacentes.
 
@@ -660,7 +661,7 @@ El problema real: la píldora convive con seis superficies distintas (trabajo / 
 /* oscuro */  --phase-veil   rgba(255, 255, 255, .10)
 ```
 
-No introduce un hue (§13): es negro o blanco con alfa. Va en la dirección que cada modo ya usa para separar superficies (§2): en claro se hunde, en oscuro sube luminosidad.
+No introduce un hue (§3.1): es negro o blanco con alfa. Va en la dirección que cada modo ya usa para separar superficies (§2): en claro se hunde, en oscuro sube luminosidad.
 
 **Contraste verificado del texto sobre la píldora, en las seis combinaciones:**
 
@@ -701,13 +702,13 @@ Misma píldora, tres contenidos. **Las tres se distinguen por ícono y palabra, 
 
 **Regla dura nueva: sobre la superficie de fase no se pinta ningún color semántico ni el acento.** "Guardado" es un éxito y §3.1 dice que el éxito es verde — pero verde `--success` sobre coral o cian tiene contraste impredecible y, encima, `--success` claro (`#147A46`) sobre `#C4441F` es ilegible. La regla que resuelve el choque, y que queda establecida para toda la app: **los semánticos y el acento solo aparecen sobre superficies neutras montadas encima** (diálogos, hojas, toasts), **nunca sobre el color de fase**. Es la contracara exacta de §3.1: así como las fases no salen de Modo entrenar, los semánticos no entran a la superficie de fase.
 
-Esto no viola "ningún estado se comunica solo por color" (§14): acá **ningún estado se comunica por color en absoluto**. Los tres se leen por ícono y por palabra, en escala de grises y en lector de pantalla.
+Esto no viola "ningún estado se comunica solo por color" (§15): acá **ningún estado se comunica por color en absoluto**. Los tres se leen por ícono y por palabra, en escala de grises y en lector de pantalla.
 
 ### 12.5 Por qué ese texto
 
 **"Sin conexión · se guarda al reconectar"**
 
-- **"Sin conexión"** nombra la causa en el idioma del usuario, no del sistema. Nada de "modo offline", "desconectado del servidor" ni códigos (§13).
+- **"Sin conexión"** nombra la causa en el idioma del usuario, no del sistema. Nada de "modo offline", "desconectado del servidor" ni códigos (§14).
 - **"se guarda al reconectar"** es la mitad que importa: es la promesa que baja la alarma y es literalmente lo que pide `docs/screens.md` §5 ("indica que la sincronización queda pendiente"). Está en voz pasiva impersonal y en futuro implícito: la app se hace cargo, el usuario no tiene nada que hacer.
 - **No dice "el timer sigue andando".** Sería defensivo y redundante: el número está contando a 88px arriba de la píldora, y esa es una prueba más fuerte que cualquier frase. El texto tiene que cargar lo que el número no puede decir.
 - **No lleva signos de exclamación, ni ícono de alerta triangular, ni la palabra "error".** No hubo error.
@@ -791,7 +792,241 @@ Presupuesto vertical a 375×667, el caso más apretado: safe-area + 16 + header 
 
 ---
 
-## 13. Voz de la interfaz
+## 13. Agrupación del historial por semana y día
+
+Spec de la Fase 4 (RF-014, RN-012). Lo funcional está cerrado en `docs/requirements.md` y `docs/screens.md` §7 y no se redefine acá: el historial se agrupa **por semana de lunes a domingo** y, dentro de cada semana, **por día calendario** determinado con la hora local del dispositivo; cada entrada abre el **snapshot congelado** (RN-001); **no hay edición ni borrado**. Lo que esta sección fija es **cómo se ve esa estructura de tres niveles** y, sobre todo, **cómo se reparte la fecha entre ellos**.
+
+### 13.1 El principio: un solo nivel enuncia la fecha
+
+Agrupar crea tres niveles apilados —semana, día, entrada— y cada uno tiene una excusa razonable para escribir la fecha. Hacerlo sería el error central de esta pantalla: *"Semana del 18 al 24 de agosto" / "Lunes 18 de agosto" / "18 de agosto de 2026, 19:30"* dice tres veces lo mismo en 60px de alto, y obliga a leer las tres para descubrir que no aportan nada nuevo (§1, silencio visual; carga cognitiva).
+
+**Regla: el encabezado de día es el único nivel que enuncia la fecha completa.**
+
+| Nivel | Qué dice | Qué NO dice |
+|---|---|---|
+| **Semana** | El tramo de tiempo: `Esta semana` o `Semana del 18 al 24 de agosto` | Nunca el día de la semana ni la hora |
+| **Día** | La fecha: `Lunes 18 de agosto` | Nunca el año (lo lleva la semana, y solo cuando hace falta) ni la hora |
+| **Entrada** | La rutina y **la hora**: `Piernas y core` · `19:30` | **Nunca la fecha.** La tiene 8px más arriba |
+
+De esta regla salen dos consecuencias que se aplican sin excepción:
+
+- **La tarjeta pierde la fecha que hoy muestra** y se queda solo con la hora. Es lo que hace que agrupar sirva para algo: si la tarjeta sigue siendo autosuficiente, los encabezados son decoración.
+- **El encabezado de día nunca es relativo** ("Hoy", "Ayer"). Es el único nivel que enuncia la fecha —así lo fija la regla de arriba y así lo recoge RF-014—: si dijera "Hoy", la fecha desaparecería de la pantalla. El encabezado de **semana** sí puede ser relativo justamente porque el día de abajo siempre tiene el dato duro.
+
+### 13.2 Jerarquía: la contención dice el nivel, el tamaño dice la prioridad
+
+El encabezado de semana es **más grande** que la tarjeta, y el de día es **más chico** que la tarjeta. No es una inconsistencia: son dos ejes distintos.
+
+- **El nivel de anidamiento se comunica por posición y contención:** los dos encabezados viven **fuera** de toda tarjeta, sobre el fondo `--bg`, alineados al borde izquierdo de la columna; la entrada es una caja `--surface` con borde. Lo que está en una caja es contenido; lo que está sobre el fondo, rotula.
+- **El tamaño refleja prioridad de lectura:** la semana es el ancla con la que se navega meses de historial y por eso es lo primero que se ve; el día es un rótulo de orientación que se lee de reojo; el nombre de la rutina es el dato que el usuario vino a buscar dentro de cada tarjeta.
+
+| Nivel | Tipografía | Color | Vive sobre |
+|---|---|---|---|
+| **Semana** | Inter **20 / 26, peso 600** (`h2`) | `--text` | `--bg` |
+| **Día** | Inter **13 / 18, peso 600**, `+0.02em` (`label`) | `--text-muted` | `--bg` |
+| **Entrada — rutina** | Inter **17 / 24, peso 600** (`h3`) | `--text` | `--surface` |
+| **Entrada — hora** | Inter **12 / 16, peso 500**, `tabular-nums` (`caption`) | `--text-muted` | `--surface` |
+
+**Por qué la rutina es `h3` y no `h2`,** aunque §4.4 asigne `h2` al "nombre de rutina en tarjeta": en **Mis rutinas** ese nombre es el contenido principal de la pantalla y no tiene nada por encima; acá la tarjeta es una hoja colgada de dos niveles de agrupación, y 20px la empataría con el encabezado de semana, que es exactamente la distinción que esta pantalla necesita sostener. Es la única excepción a esa fila de la escala y no se extiende a ninguna otra pantalla.
+
+**Toda la jerarquía es neutra.** Ni el acento ni ningún semántico entran en esta pantalla: el color no distingue niveles, y "Esta semana" no es un estado activo de navegación (§3.1).
+
+### 13.3 Encabezado de semana
+
+| Propiedad | Valor |
+|---|---|
+| Texto | `Esta semana` (semana en curso) · `Semana del 18 al 24 de agosto` (cualquier otra) |
+| Tipografía | Inter 20 / 26, peso 600 · color `--text` |
+| Alineación | Izquierda, al borde de la columna de contenido |
+| Fondo | `--bg` **opaco** (lo necesita por ser sticky, §13.7). Sin blur, sin transparencia |
+| Padding | `12px 0` |
+| Borde / sombra | **Ninguno**, en ningún modo ni estado |
+| Interactividad | **Ninguna.** No colapsa, no filtra, no navega |
+
+**Formato de la fecha** (`es-AR`, meses en minúscula como manda el idioma):
+
+| Caso | Texto |
+|---|---|
+| Semana en curso | `Esta semana` |
+| Semana dentro de un mismo mes | `Semana del 18 al 24 de agosto` |
+| Semana que cruza de mes | `Semana del 28 de julio al 3 de agosto` |
+| Semana de otro año | `Semana del 16 al 22 de diciembre de 2025` |
+| Semana que cruza de año | `Semana del 29 de diciembre de 2025 al 4 de enero de 2026` |
+
+**El año aparece solo cuando el tramo no pertenece al año en curso**, y se pega al extremo cuyo año difiere. Un año escrito en todos los encabezados es ruido permanente para desambiguar algo que casi nunca está ambiguo.
+
+**Por qué "Esta semana" y por qué solo esa:** la semana en curso es la única que todavía **se está llenando** —el usuario puede sumarle un entrenamiento hoy mismo—, y es la que mira el 90% de las veces que abre la pantalla. Nombrarla con un rango de fechas la obliga a hacer aritmética para reconocer el presente. Las demás son historia cerrada y se identifican por su fecha.
+
+**"Semana pasada" queda descartado a propósito.** Sumaría un tercer formato (`Esta semana` / `Semana pasada` / `Semana del 11 al 17 de agosto`) y el usuario tendría que aprender dónde termina lo relativo y empieza lo absoluto. Con una sola etiqueta relativa la regla es trivial: **la de arriba de todo es la actual; el resto tiene fecha.**
+
+**Sin rango de fechas al lado de "Esta semana".** Los días de abajo ya lo dicen, uno por uno (§13.1).
+
+### 13.4 Encabezado de día
+
+| Propiedad | Valor |
+|---|---|
+| Texto | `Lunes 18 de agosto` — día de la semana con inicial mayúscula, día en número, mes en minúscula, **sin año** |
+| Tipografía | Inter 13 / 18, peso 600, `letter-spacing: +0.02em` · color `--text-muted` |
+| Caja | Sin fondo, sin borde, sin padding. Es texto sobre `--bg` |
+| Sticky | **No** (§13.7) |
+| Interactividad | Ninguna |
+
+**No va en mayúsculas sostenidas.** El nivel `label` de §4.4 pide peso 600 y `+0.02em`, no versalitas: `LUNES 18 DE AGOSTO` es una cadena larga en un formato que se lee más lento y que además se parece a un encabezado de tabla, que no es lo que esto es. La mayúscula inicial del día de la semana alcanza para marcar el arranque del grupo.
+
+**El día de la semana está escrito con todas las letras y va primero** porque es el dato con el que el usuario recuerda un entrenamiento ("el martes hice piernas"), no el número.
+
+**El día calendario es literal:** un entrenamiento terminado a las 00:30 pertenece a ese día, no al anterior. No existe ninguna heurística de "el día de entrenamiento termina a las 4 AM" (RN-012 no la habilita y sería una regla invisible).
+
+### 13.5 La tarjeta de entrada
+
+Conserva la forma que ya tiene y cambia solo su contenido de texto y su tipografía.
+
+| Propiedad | Valor |
+|---|---|
+| Caja | `--surface`, borde 1px `--border`, radio `--r-lg`, ancho completo de la columna |
+| Disparador | `<button>` de ancho completo, padding **12px 16px**, alto mínimo 44px (en la práctica ~64px con las dos líneas), texto alineado a la izquierda |
+| Línea 1 | Nombre de la rutina: Inter 17 / 24, peso 600, `--text`, `overflow-wrap: anywhere` |
+| Línea 2 | Hora en formato **24h `HH:mm`** (`19:30`): Inter 12 / 16, peso 500, `--text-muted`, `tabular-nums` (§4.3), 2px debajo de la línea 1, con etiqueta visualmente oculta `Hora: ` |
+| Chevron | Ícono de trazo 24px, `--text-muted`, área tocable **44×44**, al extremo derecho, centrado verticalmente respecto de la fila cerrada |
+| Panel abierto | Sin cambios respecto de lo actual: borde superior 1px `--border`, padding 12px 16px, y el equipo congelado con los chips de §11.2–§11.5 |
+
+**La hora se muestra siempre**, incluso cuando el día tiene una sola entrada. Mostrarla condicionalmente haría que la tarjeta cambiara de alto según el día, y el usuario no tendría forma de saber por qué. Con 12px muted y `tabular-nums` cuesta 16px de alto y desambigua el caso de §13.8.
+
+**El chevron es un agregado no solicitado — confirmar.** No agrega ninguna acción: la tarjeta ya es expandible hoy (tiene `aria-expanded`) pero **nada en pantalla lo dice**, así que se lee como una tarjeta muerta y el snapshot queda escondido detrás de un toque que el usuario no sabe que existe (affordance, §1). El chevron apunta hacia abajo cerrado y hacia arriba abierto; la rotación es de **120ms `ease-out`** (§9), y con `prefers-reduced-motion: reduce` **no rota**: se cambia el ícono sin transición.
+
+**Los siete estados del disparador (§6.2):**
+
+| Estado | Forma |
+|---|---|
+| Reposo | `--surface` + borde `--border` |
+| Hover | Fondo `--surface-2` (los dos modos) |
+| Foco | Anillo 2px `--accent`, offset 2px, sobre la tarjeta entera |
+| Presionado | Escala 0.98 |
+| Deshabilitado | **No aplica: nunca se deshabilita** |
+| Cargando | **No aplica:** el snapshot llega junto con el listado, así que abrir no dispara ninguna llamada |
+| Error | **No aplica** a la tarjeta; el error de carga es de pantalla (§13.9) |
+
+**El estado abierto no se comunica por color:** lo dicen el chevron y el panel visible.
+
+### 13.6 Ritmo vertical
+
+Todos los valores declarados están en la escala de §5.2 (`4, 8, 12, 16, 20, 24, 32…`).
+
+| Elemento | Separación |
+|---|---|
+| Grupo de semana | `margin-top: 32px` — **0 el primero** (queda el gap de 24px que ya lo separa del título "Historial") |
+| Encabezado de semana | `padding: 12px 0` (los 12px de arriba son además el respiro cuando queda pegado, §13.7) |
+| Grupo de día | `margin-top: 20px` — **4px el primero** de cada semana |
+| Encabezado de día → primera tarjeta | `8px` |
+| Entre tarjetas del mismo día | `12px` (§5.2) |
+| Final de la lista | `96px` de espacio libre (§8.3) |
+
+La escalera importa más que los números sueltos: **32 (semana) > 20 (día) > 12 (entre tarjetas) > 8 (encabezado y sus tarjetas)**. El aire *encima* de un encabezado siempre es mayor que el aire *debajo*, así que por proximidad (Gestalt) el rótulo se lee pegado a lo que rotula y separado de lo que quedó arriba. Si esa relación se invierte en cualquier punto, la agrupación se lee al revés y no hay tipografía que la salve.
+
+### 13.7 Sticky: la semana sí, el día no
+
+**El encabezado de semana es sticky. El de día no.**
+
+| Propiedad | Valor |
+|---|---|
+| `position` | `sticky` |
+| `top` | **0** en compacto (no hay barra superior) · **56px** en amplio (alto de la barra superior fija, §7.2) |
+| Fondo | `--bg` opaco. Sin blur (§7.1: en movimiento el contenido de atrás ensucia el texto) |
+| Borde / sombra | Ninguno. La tarjeta que pasa por debajo se corta contra un fondo casi del mismo valor (`--surface` sobre `--bg` es un salto mínimo en los dos modos), así que el corte se lee suave y no necesita una línea que lo explique |
+| Apilamiento | Por encima de las tarjetas y **por debajo** de la barra de navegación |
+
+**Por qué la semana sí:** es el único rótulo que responde "¿dónde estoy?" cuando el usuario tira del scroll hacia atrás buscando un mes viejo. Sin fijarlo, la respuesta puede quedar a una pantalla y media de distancia y hay que frenar y volver. Cuesta 42px de banda superior, el mismo orden de magnitud que ya se aceptó para la franja de estado de §12.2.
+
+**Por qué el día no:**
+
+- Dos encabezados pegados se apilan y se convierten en una **barra de herramientas de ~70px** que ninguna de las dos cosas es; en 375×667 eso es el 11% del alto útil, permanente.
+- Un grupo de día tiene casi siempre **una sola tarjeta**: el rótulo quedaría pegado más tiempo del que dura su contenido, y se leería como si rotulara la tarjeta del día siguiente. Un rótulo que miente sobre lo que tiene debajo es peor que no tenerlo.
+- Es texto de 13px `--text-muted`: fijado sobre tarjetas que se deslizan, se lee como resto, no como estructura.
+
+**Alternativa evaluada y descartada:** nada sticky. Es más simple y no cuesta altura, pero pierde el único beneficio real de agrupar un historial largo —poder recorrerlo sin perder la referencia temporal—, y deja la pantalla igual de plana que antes salvo por unos rótulos intercalados.
+
+### 13.8 Casos límite
+
+| Caso | Resolución |
+|---|---|
+| **Semana con un solo día con actividad** | **Se dibujan los dos encabezados igual.** El nivel nunca se colapsa "porque hay uno solo": es la misma lógica de §11.1 (un grupo de un elemento sigue siendo una caja). Una estructura que cambia de forma según cuánto contiene obliga a re-interpretarla en cada scroll |
+| **Día con un solo entrenamiento** | Igual: encabezado de día siempre presente, con su hora en la tarjeta |
+| **Día con varios entrenamientos** | **El modelo lo permite** (`data-model.md` §2.9: nada limita la cantidad de `WorkoutLog` por día, ni siquiera repetir el mismo día de la misma rutina). Se apilan varias tarjetas bajo el mismo encabezado de día, separadas 12px, **ordenadas por hora descendente**. Si dos entradas son de la misma rutina y el mismo día, **la hora es lo único que las distingue**: por eso es obligatoria (§13.5) |
+| **Semanas sin actividad entre dos con actividad** | **No se dibujan.** El historial es el registro de lo que pasó, no un calendario: un encabezado con nada debajo sería un vacío mudo (§6.4), y una pausa de seis meses generaría 26 encabezados huecos que hay que scrollear |
+| **Orden general** | Semanas descendentes, días descendentes dentro de la semana, entradas descendentes dentro del día. Un solo eje temporal, siempre lo más reciente arriba, coherente con el orden que ya devuelve el backend |
+| **Resumen o conteo por semana** ("3 entrenamientos") | **No se incluye.** Excede el brief y empuja hacia una lectura de puntaje semanal que §13 (voz) descarta. Si se quisiera, se decide aparte |
+
+### 13.9 Estados de pantalla
+
+- **Cargando:** el esqueleto toma la forma del contenido real (§6.4) y por lo tanto **incluye los encabezados**: una barra de 20px de alto al 45% del ancho (semana), una de 14px al 30% (día), dos tarjetas, y un segundo bloque de día con una tarjeta. Respeta el ritmo de §13.6. Un esqueleto de tarjetas planas prometería una pantalla que ya no existe.
+- **Vacío:** sin ningún encabezado. Se mantiene el estado vacío de §6.4 con el texto ya definido en `docs/screens.md` §7. **Corrección al estado actual:** la acción que lo resuelve ("Ir a Mis rutinas") va como **botón primario dentro del bloque vacío**, no como link de texto suelto debajo — §6.4 lo pide explícitamente y hoy no se cumple.
+- **Error:** sin encabezados; el bloque de error con reintento ocupa el lugar de la lista.
+- **Con datos:** lo especificado en §13.2–§13.7.
+
+### 13.10 Contención responsive
+
+| | Compacta (375–1023px) | Amplia (≥1024px) |
+|---|---|---|
+| Columnas de tarjetas | 1 | **1** (excepción, ver abajo) |
+| Tarjeta | Dos líneas apiladas: rutina arriba, hora debajo | **Una línea:** rutina a la izquierda, hora alineada a la derecha, chevron al extremo |
+| `top` del encabezado sticky | 0 | 56px |
+| Tipografía de los tres niveles | Sin cambios | Sin cambios |
+
+**El historial es la excepción a "listas = 2 columnas en amplio" de §8.5.** Dos columnas obligan a un barrido en Z dentro de cada día, y el historial tiene un solo eje: el tiempo. Además, un día tiene casi siempre una entrada, así que la grilla quedaría medio vacía en casi todas las filas. §8.5 queda actualizada con esta excepción. El ancho sobrante en amplio se aprovecha llevando la hora al extremo derecho de la tarjeta, no metiendo una segunda columna.
+
+| Invariante (§8.4) | Cómo se cumple acá |
+|---|---|
+| **1 · Sin scroll horizontal del `body`** | Los encabezados son texto que envuelve; el nombre de rutina usa `overflow-wrap: anywhere`; ninguna caja tiene ancho fijo. La cadena más larga prevista (`Semana del 29 de diciembre de 2025 al 4 de enero de 2026`) **envuelve a dos líneas** a 375px, y el encabezado sticky crece con ella: no se trunca, no se elide y no se achica la tipografía |
+| **2 · Modales completos y scrolleables** | No aplica: el detalle se expande **en línea**, no en modal |
+| **3 · Ninguna acción inalcanzable** | El encabezado sticky **no contiene ninguna acción**, así que no puede tapar ninguna; la lista conserva los 96px libres al final (§8.3) para que la última tarjeta y su detalle abierto queden por encima de la barra inferior |
+| **4 · Las superficies anchas scrollean en sí mismas** | No aplica a la agrupación. Adentro del panel abierto, la línea de equipo sigue la regla de §11.9: envuelve, nunca scrollea |
+
+### 13.11 Accesibilidad
+
+- **Estructura de encabezados real:** `h1` "Historial" → `h2` por semana → `h3` por día. Quien navega por encabezados recorre el historial por tramos sin escuchar tarjeta por tarjeta. El nombre de la rutina **no** es un encabezado: vive dentro del botón que expande.
+- Cada grupo de semana y de día es una región rotulada por su encabezado, de modo que el lector de pantalla anuncia el contexto al entrar.
+- La hora lleva la etiqueta visualmente oculta `Hora: ` (mismo patrón que `Equipo: ` de §11.10) y se lee `19:30`.
+- **Nada depende del color:** los tres niveles se distinguen por tamaño, peso, posición y contención. En escala de grises la jerarquía se mantiene entera.
+- Contrastes: `--text` sobre `--bg` ≥ 15:1 en los dos modos; `--text-muted` sobre `--bg` ≥ 5.5:1 en los dos modos (§11.10), por encima del 4.5:1 de texto normal aun a 12px.
+- El encabezado sticky **no es focalizable** y no entra en el orden de tabulación. Al tabular hacia una tarjeta que quedó debajo de la banda, el navegador la desplaza a la vista: por eso la banda no lleva sombra ni alto extra que agrande la zona ciega.
+- Targets: el disparador de la tarjeta ocupa el ancho completo con ~64px de alto; el chevron vive **dentro** de ese mismo botón (no es un segundo target adyacente que compita con él).
+
+### 13.12 Prohibido acá
+
+1. Repetir la fecha en la tarjeta de entrada. La tarjeta muestra hora, nunca fecha.
+2. Etiquetas relativas en el encabezado de **día** ("Hoy", "Ayer").
+3. Un segundo formato relativo de semana ("Semana pasada", "Hace 2 semanas").
+4. Omitir el encabezado de semana o de día cuando el grupo tiene un solo hijo.
+5. Dibujar semanas sin actividad.
+6. Fijar (sticky) el encabezado de día, o apilar dos encabezados fijos.
+7. Teñir cualquiera de los dos encabezados con el acento o con un semántico, incluida la semana en curso.
+8. Encabezados con fondo distinto de `--bg`, con blur, con borde permanente o con sombra.
+9. Truncar con elipsis un encabezado de semana largo, o bajarle el tamaño para que entre.
+10. Convertir un encabezado en control (colapsar la semana, filtrar por semana, borrar el grupo).
+
+### 13.13 Checklist de aceptación visual
+
+1. **Tres niveles:** con al menos dos semanas de datos se ven encabezados de semana, encabezados de día y tarjetas, en ese orden de anidamiento y con la semana más reciente arriba.
+2. **La fecha se dice una sola vez:** ninguna tarjeta muestra la fecha; solo el nombre de la rutina y la hora `HH:mm`.
+3. **Semana en curso:** el primer encabezado dice exactamente `Esta semana`, sin rango de fechas al lado.
+4. **Semanas pasadas:** dicen `Semana del 18 al 24 de agosto`; una semana que cruza de mes nombra los dos meses; una de otro año incluye el año.
+5. **Día:** dice `Lunes 18 de agosto`, con la inicial en mayúscula, en minúsculas el resto, **sin año** y **sin mayúsculas sostenidas**.
+6. **Jerarquía:** el encabezado de semana es visiblemente más grande que el nombre de la rutina, y el de día visiblemente más chico y más gris. Se verifica igual en modo claro y en modo oscuro.
+7. **Ritmo:** el aire por encima de cada encabezado es mayor que el aire por debajo; las tarjetas de un mismo día están más juntas entre sí que respecto del encabezado del día siguiente.
+8. **Sticky:** al scrollear, el encabezado de semana queda pegado arriba con fondo opaco (en amplio, justo debajo de la barra superior) y las tarjetas pasan por debajo sin verse a través de él. El encabezado de día **no** queda pegado.
+9. **Un solo día:** una semana con un único día con actividad muestra igual sus dos encabezados.
+10. **Varias entradas en un día:** dos entrenamientos del mismo día aparecen como dos tarjetas bajo un único encabezado de día, ordenadas de más reciente a más antiguo, distinguibles por la hora aunque la rutina sea la misma.
+11. **Sin huecos:** entre dos semanas con actividad separadas por semanas vacías no aparece ningún encabezado sin contenido.
+12. **375px:** el encabezado de semana más largo envuelve a dos líneas sin generar scroll horizontal, sin elipsis y sin cambiar de tamaño.
+13. **Amplio:** una sola columna de tarjetas; la hora aparece alineada a la derecha, en la misma línea que el nombre de la rutina.
+14. **Neutralidad:** ningún encabezado usa violeta, verde, carmesí ni ámbar en ningún modo.
+15. **Esqueleto:** el estado de carga muestra barras con forma de encabezado de semana y de día, no solo tarjetas.
+16. **Vacío:** sin ningún entrenamiento no se dibuja ningún encabezado, y el CTA "Ir a Mis rutinas" es un botón primario dentro del bloque vacío.
+17. **(Si se confirma el chevron) Affordance:** cada tarjeta muestra un chevron que apunta hacia abajo cerrada y hacia arriba abierta; con `prefers-reduced-motion: reduce` cambia sin rotar.
+
+---
+
+## 14. Voz de la interfaz
 
 - **Español rioplatense, voseo, segunda persona.** "Empezá", "Guardá", "Agregá un bloque".
 - Botones con el **verbo real** de la acción, nunca "Aceptar"/"OK" en decisiones con consecuencia.
@@ -801,7 +1036,7 @@ Presupuesto vertical a 375×667, el caso más apretado: safe-area + 16 + header 
 
 ---
 
-## 14. Prohibiciones (resumen ejecutable)
+## 15. Prohibiciones (resumen ejecutable)
 
 1. Numerales del timer en tipografía que no sea mono + tabular.
 2. Verde, rojo o ámbar usados para algo que no sea éxito, destructivo/error o advertencia.
@@ -819,6 +1054,8 @@ Presupuesto vertical a 375×667, el caso más apretado: safe-area + 16 + header 
 14. Colores semánticos o acento pintados **sobre la superficie de fase** de Modo entrenar. Los semánticos solo aparecen sobre superficies neutras montadas encima (diálogos, hojas, toasts).
 15. Un toast usado para comunicar una **condición persistente** (sin conexión, sincronización pendiente). El toast es para eventos efímeros.
 16. Un elemento que aparece o desaparece **desplazando el número del timer**. Todo indicador de Modo entrenar vive en un slot de alto reservado.
+17. Decir la fecha más de una vez en el historial: la enuncia el encabezado de día y nadie más (§13.1).
+18. Omitir un nivel de agrupación del historial porque tiene un solo hijo, dibujar semanas sin actividad, o fijar (sticky) el encabezado de día (§13.7, §13.8).
 
 ---
 
@@ -850,3 +1087,9 @@ Presupuesto vertical a 375×667, el caso más apretado: safe-area + 16 + header 
 | 2026-08-26 | Texto fijo: "Sin conexión · se guarda al reconectar"; sin "el timer sigue andando" (§12.5) | La segunda mitad es la promesa que baja la alarma y es lo que pide `screens.md` §5; que el timer anda ya lo prueba el número contando a 88px arriba de la píldora |
 | 2026-08-26 | Sí hay estado transitorio "Sincronizando" → "Guardado" (3s), pero **solo si había algo en cola** (§12.6) | Una desaparición muda deja la duda "¿se guardó o perdí el indicador?"; confirmar un guardado que no ocurrió sería mentir |
 | 2026-08-26 | Piso de 2s en pantalla y 2s de red estable antes de retirar la píldora (§12.6) | Con señal intermitente, un elemento que estrobea arriba de la pantalla molesta más de lo que informa |
+| 2026-08-26 | En el historial **solo el encabezado de día enuncia la fecha**; la tarjeta pierde la fecha y muestra la hora (§13.1) | Con tres niveles apilados, la fecha se diría tres veces en 60px de alto; si la tarjeta sigue siendo autosuficiente, los encabezados son decoración |
+| 2026-08-26 | Semana en curso = `Esta semana`; el resto, fecha explícita. Sin "Semana pasada" y sin etiquetas relativas a nivel de día (§13.3, §13.4) | Una sola etiqueta relativa deja una regla trivial ("la de arriba es la actual"); un segundo formato obligaría a aprender dónde termina lo relativo. El día no puede ser relativo porque es el único nivel que enuncia la fecha (§13.1): si dijera "Hoy", la fecha desaparecería de la pantalla |
+| 2026-08-26 | Jerarquía del historial: semana `h2` `--text` > rutina `h3` > día `label` `--text-muted`; el encabezado de día es **más chico** que la tarjeta a propósito (§13.2) | La contención y la posición comunican el nivel de anidamiento; el tamaño comunica prioridad de lectura. El nombre de rutina baja a `h3` (única excepción a §4.4) para no empatar con el encabezado de semana |
+| 2026-08-26 | El encabezado de semana es sticky; el de día no (§13.7) | La semana es el único rótulo que responde "¿dónde estoy?" al recorrer meses; dos encabezados fijos se apilan en una barra de ~70px, y un rótulo de día pegado sobrevive a su contenido (un día tiene casi siempre una tarjeta) |
+| 2026-08-26 | Ningún nivel de agrupación se colapsa por tener un solo hijo, y las semanas sin actividad no se dibujan (§13.8) | Misma lógica que §11.1: una estructura que cambia de forma según cuánto contiene se re-interpreta en cada scroll. Y un encabezado sin contenido es un vacío mudo; seis meses de pausa serían 26 encabezados huecos |
+| 2026-08-26 | El historial queda en **una columna también en amplio**, contra la regla general de §8.5 | Dos columnas imponen un barrido en Z dentro de cada día, y el historial tiene un solo eje: el tiempo. Además la grilla quedaría medio vacía casi siempre. El ancho extra se usa llevando la hora al extremo derecho de la tarjeta |

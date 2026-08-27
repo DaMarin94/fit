@@ -46,7 +46,7 @@ No son límites permanentes; son alcance de una versión futura:
 ### 2.3 Definición de "v1 terminada"
 
 1. Los cuatro tipos de timer cuentan bien y avisan las transiciones sin fallar.
-2. El historial básico es visible: lista con fecha + rutina.
+2. El historial básico es visible: entrenamientos agrupados por día, con rutina y hora.
 3. Modo entrenar es cómodo de usar en el celular durante el entrenamiento.
 
 ---
@@ -88,7 +88,7 @@ No son límites permanentes; son alcance de una versión futura:
 | ID | Requerimiento |
 |---|---|
 | **RF-013** | Al terminar un entrenamiento se guarda un registro de historial con la fecha y el **snapshot completo** de lo realizado (RN-001) |
-| **RF-014** | El usuario consulta el historial como una lista de entrenamientos realizados, agrupada por semana y por día calendario (RN-012). Cada entrada muestra la fecha y la rutina, y permite ver el snapshot de lo que se hizo |
+| **RF-014** | El usuario consulta el historial como una lista de entrenamientos realizados, agrupada por semana y por día calendario (RN-012). **La fecha la enuncia el encabezado del día**, no la entrada: cada entrada muestra la rutina y la hora, y permite ver el snapshot de lo que se hizo |
 
 ### 3.5 Transversales de producto
 
